@@ -1,0 +1,20 @@
+Options -MultiViews
+RewriteEngine On
+
+# Handle CSS files
+<FilesMatch "\.(css)$">
+  Header set Content-Type "text/css"
+</FilesMatch>
+
+# Handle JS files
+<FilesMatch "\.(js)$">
+  Header set Content-Type "application/javascript"
+</FilesMatch>
+
+# Handle JSON files
+<FilesMatch "\.(json)$">
+  Header set Content-Type "application/json"
+</FilesMatch>
+
+# React Router
+RewriteRule ^(?!.*\.).*$ /index.html [L]

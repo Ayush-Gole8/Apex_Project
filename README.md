@@ -189,53 +189,55 @@ npm run dev        # Start with nodemon
 
 ## 🚀 Deployment
 
-### **Render Deployment (Complete Setup)**
+### **Single Service Deployment on Render (Recommended)**
 
-#### **Backend Deployment:**
-1. **Create Web Service** on Render
-2. **Connect GitHub** repository: `ApeX-Project`
-3. **Configure Settings:**
-   ```
-   Name: apex-backend
-   Environment: Node
-   Root Directory: backend
-   Build Command: npm install
-   Start Command: npm start
-   ```
-4. **Environment Variables:**
-   ```
-   NODE_ENV=production
-   JWT_SECRET=your_super_secure_jwt_secret
-   GEMINI_API_KEY=your_gemini_api_key
-   FRONTEND_URL=https://apex-frontend.onrender.com
-   PORT=5000
-   ```
+#### **Complete Setup:**
+1. **Stop any existing deployments** (frontend/backend services)
+2. **Create New Web Service** on Render
+3. **Connect GitHub** repository: `ApeX-Project`
+4. **Configure Single Service:**
 
-#### **Frontend Deployment:**
-1. **Create Static Site** on Render
-2. **Connect GitHub** repository: `ApeX-Project`
-3. **Configure Settings:**
-   ```
-   Name: apex-frontend
-   Root Directory: frontend
-   Build Command: npm install && npm run build
-   Publish Directory: build
-   ```
-4. **Environment Variable:**
-   ```
-   REACT_APP_API_URL=https://apex-backend.onrender.com
-   ```
+**Render Settings:**
+```
+Service Name: apex-fullstack
+Environment: Node
+Root Directory: [LEAVE BLANK]
+Build Command: cd frontend && npm ci && npm run build && cd ../backend && npm ci
+Start Command: cd backend && npm start
+```
 
-#### **After Deployment:**
-1. Update backend CORS with actual frontend URL
-2. Update frontend API URL with actual backend URL
-3. Test the complete application flow
-4. Monitor logs for any issues
+**Environment Variables:**
+```
+NODE_ENV=production
+JWT_SECRET=your_super_secure_jwt_secret
+GEMINI_API_KEY=your_gemini_api_key
+PORT=5000
+```
 
-**Live URLs:**
-- Frontend: `https://apex-frontend.onrender.com`
-- Backend API: `https://apex-backend.onrender.com`
-- Health Check: `https://apex-backend.onrender.com/health`
+#### **Benefits of Single Deployment:**
+- 🎯 **One URL** for everything (`https://apex-fullstack.onrender.com`)
+- 🔒 **No CORS issues** (same domain)
+- 💰 **Cost effective** (single service)
+- 🛠️ **Easier management** and debugging
+- ⚡ **Better performance** (no cross-domain requests)
+
+#### **Local Development:**
+```bash
+# Install dependencies
+npm run install-deps
+
+# Start both frontend and backend
+npm run dev
+
+# Or separately:
+cd backend && npm run dev
+cd frontend && npm start
+```
+
+**Live Application:**
+- **Frontend**: Root URL serves React app
+- **API Endpoints**: `/api/*` routes
+- **Health Check**: `/health`
 
 ### **Other Deployment Options**
 

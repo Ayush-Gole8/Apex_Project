@@ -4,15 +4,15 @@
   "description": "AI-Powered Learning Platform with Gemini AI and RAG",
   "main": "backend/server.js",
   "scripts": {
+    "build": "cd frontend && npm install && npm run build && cd ../backend && npm install",
     "start": "cd backend && npm start",
-    "install-backend": "cd backend && npm install",
-    "install-frontend": "cd frontend && npm install",
-    "build-frontend": "cd frontend && npm run build",
-    "dev-backend": "cd backend && npm run dev",
-    "dev-frontend": "cd frontend && npm start"
+    "postinstall": "cd frontend && npm install && npm run build",
+    "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm start\"",
+    "install-deps": "cd backend && npm install && cd ../frontend && npm install"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   },
   "repository": {
     "type": "git",
@@ -25,7 +25,8 @@
     "rag",
     "education",
     "react",
-    "nodejs"
+    "nodejs",
+    "fullstack"
   ],
   "author": "Ayush Gole",
   "license": "MIT"

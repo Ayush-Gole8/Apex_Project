@@ -15,7 +15,15 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      // Verify token and get user data
+      setIsAuthenticated(true);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -46,6 +54,7 @@ export const AuthProvider = ({ children }) => {
       
       localStorage.setItem('token', response.data.token);
       setUser(response.data.user);
+      setIsAuthenticated(true);
       return { success: true };
     } catch (error) {
       return { 
@@ -65,6 +74,7 @@ export const AuthProvider = ({ children }) => {
       
       localStorage.setItem('token', response.data.token);
       setUser(response.data.user);
+      setIsAuthenticated(true);
       return { success: true };
     } catch (error) {
       return { 
@@ -76,8 +86,8 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('token');
-    setToken(null);
     setUser(null);
+    setIsAuthenticated(false);
     delete axios.defaults.headers.common['Authorization'];
   };
 
@@ -87,7 +97,7 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     loading,
-    isAuthenticated: !!user
+    isAuthenticated
   };
 
   return (

@@ -25,13 +25,9 @@ if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'your_gemini_ap
   console.log('⚠️ Gemini API key not configured');
 }
 
-// CORS configuration for production
+// CORS configuration - less restrictive for single deployment
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || [
-    'http://localhost:3000',
-    'https://apex-frontend.onrender.com',
-    'https://your-actual-frontend-url.onrender.com' // Update with your actual frontend URL after deployment
-  ],
+  origin: process.env.NODE_ENV === 'production' ? false : 'http://localhost:3000',
   credentials: true,
   optionsSuccessStatus: 200
 };
@@ -39,6 +35,11 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Serve static files from React build
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../frontend/build')));
+}
 
 // Middleware to log requests
 app.use((req, res, next) => {
@@ -59,14 +60,18 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Root endpoint
-app.get('/', (req, res) => {
+// Root endpoint - API info (only for API requests)
+app.get('/api', (req, res) => {
   res.json({ 
     message: 'ApeX API Server', 
     version: '1.0.0',
     endpoints: ['/health', '/api/auth', '/api/courses', '/api/generate-course']
   });
 });
+
+// API Routes go here (all your existing API routes)
+
+// ...existing API routes...
 
 // Load data from persistent storage
 let users = dataManager.getUsers();
@@ -894,12 +899,41 @@ app.use((err, req, res, next) => {
   });
 });
 
+// Serve React app for all non-API routes (MUST BE LAST!)
+if (process.env.NODE_ENV === 'production') {
+  app.get('*', (req, res) => {
+    const indexPath = path.join(__dirname, '../frontend/build/index.html');
+    console.log(`Serving React app from: ${indexPath}`);
+    res.sendFile(indexPath, (err) => {
+      if (err) {
+        console.error('Error serving React app:', err);
+        res.status(500).send('Error loading application');
+      }
+    });
+  });
+} else {
+  app.get('/', (req, res) => {
+    res.json({ 
+      message: 'ApeX API Server - Development Mode', 
+      version: '1.0.0',
+      note: 'Frontend should be running on port 3000'
+    });
+  });
+}
+
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 ApeX Server running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔗 Health check: http://localhost:${PORT}/health`);
   console.log(`🤖 Gemini API: ${process.env.GEMINI_API_KEY ? '✅ Configured' : '❌ Missing'}`);
+  
+  // Log static file serving info
+  if (process.env.NODE_ENV === 'production') {
+    const frontendPath = path.join(__dirname, '../frontend/build');
+    console.log(`🎨 Serving React app from: ${frontendPath}`);
+    console.log(`🌐 React app available at: http://localhost:${PORT}`);
+  }
 });
 
 // Graceful shutdown
