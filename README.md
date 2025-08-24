@@ -66,8 +66,10 @@
    ```env
    PORT=5000
    JWT_SECRET=your_jwt_secret_key_here
-   OPENAI_API_KEY=your_openai_api_key_here
+   GEMINI_API_KEY=your_gemini_api_key_here
    ```
+
+   Get your Gemini API key from: https://makersuite.google.com/app/apikey
 
 5. **Start the Application**
    
@@ -130,7 +132,8 @@ ApeX-Project/
 ## 🎯 Core Features
 
 ### **AI Course Generation**
-- Powered by OpenAI's GPT models
+- Powered by Google's Gemini AI models
+- Enhanced with RAG (Retrieval-Augmented Generation)
 - Generates structured course content
 - Includes modules, exercises, and assessments
 - Real-world applications and examples
@@ -186,12 +189,35 @@ npm run dev        # Start with nodemon
 
 ## 🚀 Deployment
 
-### **Frontend Deployment**
+### **Render Deployment (Recommended)**
+
+**Backend Deployment:**
+1. Push your code to GitHub
+2. Connect your GitHub repo to Render
+3. Create a new Web Service
+4. Set build command: `npm install`
+5. Set start command: `npm start`
+6. Add environment variables:
+   - `NODE_ENV=production`
+   - `JWT_SECRET=your_secure_secret`
+   - `OPENAI_API_KEY=your_openai_key`
+   - `FRONTEND_URL=https://your-frontend-url.onrender.com`
+
+**Frontend Deployment:**
+1. Create a new Static Site on Render
+2. Set build command: `npm install && npm run build`
+3. Set publish directory: `build`
+4. Add environment variable:
+   - `REACT_APP_API_URL=https://your-backend-url.onrender.com`
+
+### **Other Deployment Options**
+
+**Frontend Deployment:**
 1. Build the project: `npm run build`
 2. Deploy the `build` folder to your hosting service
 3. Configure environment variables
 
-### **Backend Deployment**
+**Backend Deployment:**
 1. Set up your server environment
 2. Install dependencies: `npm install`
 3. Configure environment variables

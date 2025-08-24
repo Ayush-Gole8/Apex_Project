@@ -1,0 +1,28 @@
+services:
+  # Backend Service
+  - type: web
+    name: apex-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+    # You'll need to add these in Render dashboard:
+    # - JWT_SECRET
+    # - OPENAI_API_KEY
+    # - FRONTEND_URL
+
+  # Frontend Service
+  - type: web
+    name: apex-frontend
+    env: static
+    plan: free
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./build
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://apex-backend.onrender.com

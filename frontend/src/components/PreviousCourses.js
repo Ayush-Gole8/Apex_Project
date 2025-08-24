@@ -9,6 +9,7 @@ import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import Footer from './Footer';
+import API_BASE_URL from '../config/api';
 
 const PreviousCourses = () => {
   const [courses, setCourses] = useState([]);
@@ -29,7 +30,7 @@ const PreviousCourses = () => {
   const fetchUserCourses = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/user/courses', {
+      const response = await axios.get(`${API_BASE_URL}/api/user/courses`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

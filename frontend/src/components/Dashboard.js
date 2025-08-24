@@ -9,6 +9,7 @@ import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import Footer from './Footer';
+import API_BASE_URL from '../config/api';
 
 const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
@@ -27,7 +28,7 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/user/dashboard', {
+      const response = await axios.get(`${API_BASE_URL}/api/user/dashboard`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

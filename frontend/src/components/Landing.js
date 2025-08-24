@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import AuthModal from './AuthModal';
 import Footer from './Footer';
+import API_BASE_URL from '../config/api';
 
 const Landing = () => {
   const [courses, setCourses] = useState([]);
@@ -36,7 +37,7 @@ const Landing = () => {
 
   const fetchCourses = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/courses');
+      const response = await axios.get(`${API_BASE_URL}/api/courses`);
       setCourses(response.data);
       setLoading(false);
     } catch (error) {
@@ -82,7 +83,7 @@ const Landing = () => {
     setIsGenerating(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post('http://localhost:5000/api/generate-course', {
+      const response = await axios.post(`${API_BASE_URL}/api/generate-course`, {
         topic: chatInput
       }, {
         headers: {
@@ -106,12 +107,22 @@ const Landing = () => {
         message: error.message,
         status: error.response?.status,
         data: error.response?.data,
-        url: error.config?.url
+        url: error.config?.url,
+        code: error.code
       });
       
-      const errorMessage = error.response?.data?.message || 
-                          error.response?.data?.instructions || 
-                          `Failed to generate course. Status: ${error.response?.status || 'No response'}`;
+      let errorMessage = 'Failed to generate course';
+      
+      if (error.code === 'ERR_NETWORK' || error.message.includes('Network Error')) {
+        errorMessage = 'Cannot connect to server. Please check if the backend is running.';
+      } else if (error.response?.status === 401) {
+        errorMessage = 'Authentication failed. Please sign in again.';
+        setShowAuthModal(true);
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.instructions) {
+        errorMessage = error.response.data.instructions;
+      }
       
       toast.error(errorMessage);
     } finally {

@@ -1,34 +1,71 @@
 const express = require('express');
 const cors = require('cors');
-const dotenv = require('dotenv');
-const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const path = require('path');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const { engineeringKnowledgeBase, findRelevantContext, generateContextPrompt } = require('./rag-knowledge');
+require('dotenv').config();
+
 const dataManager = require('./dataManager');
-
-// Load environment variables
-dotenv.config();
-
-console.log('🚀 Starting APEX Backend Server...');
-console.log('📍 Port:', process.env.PORT || 5000);
-console.log('🔑 Gemini API Key configured:', !!process.env.GEMINI_API_KEY);
+const { findRelevantContext, generateContextPrompt, engineeringKnowledgeBase } = require('./rag-knowledge');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-
 // Initialize Gemini AI
-let genAI;
+let genAI = null;
 if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'your_gemini_api_key_here') {
-  genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-  console.log('✅ Gemini AI initialized successfully');
+  try {
+    genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    console.log('✅ Gemini AI initialized successfully');
+  } catch (error) {
+    console.error('❌ Error initializing Gemini AI:', error.message);
+  }
 } else {
-  console.log('⚠️  Gemini API key not configured properly');
+  console.log('⚠️ Gemini API key not configured');
 }
+
+// CORS configuration for production
+const corsOptions = {
+  origin: process.env.FRONTEND_URL || [
+    'http://localhost:3000',
+    'https://apex-frontend.onrender.com' // Update with your actual frontend URL
+  ],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Middleware to log requests
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
+
+// Health check endpoint for Render
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK', 
+    message: 'ApeX Server is running',
+    timestamp: new Date().toISOString(),
+    gemini: {
+      configured: !!(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'your_gemini_api_key_here'),
+      initialized: !!genAI
+    }
+  });
+});
+
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'ApeX API Server', 
+    version: '1.0.0',
+    endpoints: ['/health', '/api/auth', '/api/courses', '/api/generate-course']
+  });
+});
 
 // Load data from persistent storage
 let users = dataManager.getUsers();
@@ -746,74 +783,86 @@ app.put('/api/user/courses/:courseId/progress', authenticateToken, (req, res) =>
   res.json({ message: 'Progress updated', course: userCourse });
 });
 
-app.get('/api/user/dashboard', authenticateToken, (req, res) => {
-  const user = users.find(u => u.id === req.user.userId);
-  const userCoursesList = userCourses.filter(uc => uc.userId === req.user.userId);
-  
-  const completedCourses = userCoursesList.filter(c => c.completed);
-  const inProgressCourses = userCoursesList.filter(c => c.progress > 0 && !c.completed);
-  const recentCourses = userCoursesList
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    .slice(0, 5);
-  
-  // Calculate learning streak (simplified)
-  const today = new Date();
-  const thisWeek = userCoursesList.filter(c => {
-    const courseDate = new Date(c.createdAt);
-    const diffTime = Math.abs(today - courseDate);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays <= 7;
-  }).length;
-  
-  // Get favorite topics
-  const topicCounts = {};
-  userCoursesList.forEach(course => {
-    const topic = course.topic.toLowerCase();
-    topicCounts[topic] = (topicCounts[topic] || 0) + 1;
-  });
-  
-  const favoriteTopics = Object.entries(topicCounts)
-    .sort(([,a], [,b]) => b - a)
-    .slice(0, 5)
-    .map(([topic, count]) => ({ topic, count }));
-  
-  res.json({
-    user: {
-      name: user.name,
-      email: user.email,
-      joinedDate: user.createdAt
-    },
-    stats: {
-      totalCourses: userCoursesList.length,
-      completedCourses: completedCourses.length,
-      inProgressCourses: inProgressCourses.length,
-      totalStudyTime: user.totalStudyTime,
-      coursesThisWeek: thisWeek,
-      completionRate: userCoursesList.length > 0 ? 
-        Math.round((completedCourses.length / userCoursesList.length) * 100) : 0
-    },
-    recentActivity: recentCourses,
-    favoriteTopics: favoriteTopics,
-    achievements: [
-      { 
-        name: "First Course", 
-        unlocked: userCoursesList.length >= 1,
-        description: "Complete your first course"
+app.get('/api/user/dashboard', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userCourses = dataManager.getUserCourses();
+    const userCoursesData = userCourses.filter(course => course.userId === userId);
+    
+    // Calculate stats
+    const stats = {
+      totalCourses: userCoursesData.length,
+      completedCourses: userCoursesData.filter(c => c.completed).length,
+      inProgressCourses: userCoursesData.filter(c => c.progress > 0 && !c.completed).length,
+      totalStudyTime: userCoursesData.reduce((total, course) => {
+        // Estimate study time based on course content
+        const estimatedTime = course.course?.modules?.length * 15 || 30;
+        return total + (course.progress > 0 ? estimatedTime : 0);
+      }, 0),
+      coursesThisWeek: userCoursesData.filter(c => {
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        return new Date(c.createdAt) > weekAgo;
+      }).length,
+      completionRate: userCoursesData.length > 0 
+        ? Math.round((userCoursesData.filter(c => c.completed).length / userCoursesData.length) * 100)
+        : 0
+    };
+
+    // Recent activity
+    const recentActivity = userCoursesData
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 5)
+      .map(course => ({
+        topic: course.course?.title || course.topic || 'Unknown Topic',
+        createdAt: course.createdAt
+      }));
+
+    // Favorite topics (simplified)
+    const topicCounts = {};
+    userCoursesData.forEach(course => {
+      const topic = course.topic || 'General';
+      topicCounts[topic] = (topicCounts[topic] || 0) + 1;
+    });
+    
+    const favoriteTopics = Object.entries(topicCounts)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 5)
+      .map(([topic, count]) => ({ topic, count }));
+
+    // Achievements (sample)
+    const achievements = [
+      {
+        name: "First Course",
+        description: "Generated your first AI course",
+        unlocked: userCoursesData.length > 0
       },
-      { 
-        name: "Learning Streak", 
-        unlocked: thisWeek >= 3,
-        description: "Generate 3 courses in a week"
+      {
+        name: "Course Collector",
+        description: "Generated 5 or more courses",
+        unlocked: userCoursesData.length >= 5
       },
-      { 
-        name: "Course Master", 
-        unlocked: completedCourses.length >= 5,
-        description: "Complete 5 courses"
+      {
+        name: "Dedicated Learner",
+        description: "Completed 3 or more courses",
+        unlocked: stats.completedCourses >= 3
       }
-    ]
-  });
+    ];
+
+    res.json({
+      user: req.user,
+      stats,
+      recentActivity,
+      favoriteTopics,
+      achievements
+    });
+  } catch (error) {
+    console.error('Dashboard error:', error);
+    res.status(500).json({ message: 'Failed to load dashboard data' });
+  }
 });
 
+// Admin data stats endpoint
 app.get('/api/admin/data-stats', (req, res) => {
   // Debug endpoint to check data persistence
   res.json({
@@ -835,9 +884,30 @@ app.get('/api/admin/data-stats', (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`🎉 APEX Backend Server running on port ${PORT}`);
-  console.log(`📱 Frontend should connect to: http://localhost:${PORT}`);
-  console.log(`🧪 Test endpoint: http://localhost:${PORT}/api/test`);
-  console.log(`📚 Courses endpoint: http://localhost:${PORT}/api/courses`);
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(500).json({ 
+    message: 'Internal server error',
+    error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+  });
+});
+
+// Start server
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 ApeX Server running on port ${PORT}`);
+  console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔗 Health check: http://localhost:${PORT}/health`);
+  console.log(`🤖 Gemini API: ${process.env.GEMINI_API_KEY ? '✅ Configured' : '❌ Missing'}`);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('🛑 SIGTERM received, shutting down gracefully');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('🛑 SIGINT received, shutting down gracefully');
+  process.exit(0);
 });
