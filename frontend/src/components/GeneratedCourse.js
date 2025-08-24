@@ -5,6 +5,7 @@ import { FiArrowLeft, FiClock, FiBookOpen, FiExternalLink, FiPlay, FiDownload, F
 import Footer from './Footer';
 import axios from 'axios';
 import API_BASE_URL from '../config/api';
+import toast from 'react-hot-toast';
 
 const GeneratedCourse = () => {
   const location = useLocation();
