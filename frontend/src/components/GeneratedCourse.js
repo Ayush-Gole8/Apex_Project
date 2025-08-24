@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FiArrowLeft, FiClock, FiBookOpen, FiExternalLink, FiPlay, FiDownload, FiCheck } from 'react-icons/fi';
 import Footer from './Footer';
+import axios from 'axios';
+import API_BASE_URL from '../config/api';
 
 const GeneratedCourse = () => {
   const location = useLocation();
@@ -27,14 +29,62 @@ const GeneratedCourse = () => {
     );
   }
 
-  const handleModuleComplete = (moduleIndex) => {
-    const newCompleted = new Set(completedModules);
-    if (newCompleted.has(moduleIndex)) {
-      newCompleted.delete(moduleIndex);
-    } else {
-      newCompleted.add(moduleIndex);
+  // Add progress tracking function
+  const updateCourseProgress = async (progress, completed = false) => {
+    try {
+      const token = localStorage.getItem('token');
+      const courseId = courseData?.id;
+      
+      if (!courseId || !token) {
+        console.log('Missing courseId or token for progress update');
+        return;
+      }
+
+      console.log('Updating course progress:', { courseId, progress, completed });
+      
+      const response = await axios.put(`${API_BASE_URL}/api/user/courses/${courseId}/progress`, {
+        progress,
+        completed
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('Progress updated successfully:', response.data);
+      
+      if (completed) {
+        toast.success('🎉 Course completed! Well done!');
+      } else {
+        toast.success(`Progress updated: ${progress}%`);
+      }
+    } catch (error) {
+      console.error('Error updating progress:', error);
+      toast.error('Failed to update progress');
     }
-    setCompletedModules(newCompleted);
+  };
+
+  // Handle module completion
+  const handleModuleComplete = (moduleIndex) => {
+    const newCompletedModules = [...completedModules];
+    if (newCompletedModules.includes(moduleIndex)) {
+      // Mark as incomplete
+      const index = newCompletedModules.indexOf(moduleIndex);
+      newCompletedModules.splice(index, 1);
+    } else {
+      // Mark as complete
+      newCompletedModules.push(moduleIndex);
+    }
+    
+    setCompletedModules(newCompletedModules);
+    
+    // Calculate progress
+    const progress = Math.round((newCompletedModules.length / (courseData?.modules?.length || 1)) * 100);
+    const isCompleted = progress === 100;
+    
+    // Update progress in database
+    updateCourseProgress(progress, isCompleted);
   };
 
   const progressPercentage = courseData.modules ? 

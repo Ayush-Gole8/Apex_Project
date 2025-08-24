@@ -30,12 +30,16 @@ const PreviousCourses = () => {
   const fetchUserCourses = async () => {
     try {
       const token = localStorage.getItem('token');
+      console.log('Fetching user courses...');
+      
       const response = await axios.get(`${API_BASE_URL}/api/user/courses`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
+      
+      console.log('User courses received:', response.data);
       setCourses(response.data.courses);
     } catch (error) {
       console.error('Error fetching courses:', error);

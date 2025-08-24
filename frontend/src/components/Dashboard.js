@@ -23,11 +23,30 @@ const Dashboard = () => {
       return;
     }
     fetchDashboardData();
+    
+    // Auto-refresh dashboard data every 30 seconds
+    const interval = setInterval(fetchDashboardData, 30000);
+    
+    // Refresh when component becomes visible
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchDashboardData();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [isAuthenticated, navigate]);
 
   const fetchDashboardData = async () => {
     try {
       const token = localStorage.getItem('token');
+      console.log('Fetching dashboard data with token:', token ? 'present' : 'missing');
+      
       const response = await axios.get(`${API_BASE_URL}/api/user/dashboard`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -35,13 +54,21 @@ const Dashboard = () => {
         }
       });
       
+      console.log('Dashboard data received:', response.data);
       setDashboardData(response.data);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      console.error('Error response:', error.response?.data);
       toast.error('Failed to load dashboard data');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Add refresh function
+  const refreshDashboard = () => {
+    setLoading(true);
+    fetchDashboardData();
   };
 
   if (loading) {

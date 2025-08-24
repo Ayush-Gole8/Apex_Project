@@ -83,6 +83,32 @@ let userCourses = dataManager.getUserCourses();
 
 console.log(`📊 Loaded ${users.length} users, ${courses.length} courses, ${userCourses.length} user courses`);
 
+// Initialize with default admin user if no users exist
+const initializeDefaultUser = async () => {
+  if (users.length === 0) {
+    console.log('🔧 No users found, creating default admin user...');
+    
+    const hashedPassword = await bcrypt.hash('admin123', 10);
+    const defaultUser = {
+      id: generateUserId(),
+      name: 'Admin User',
+      email: 'admin@apex.com',
+      password: hashedPassword,
+      createdAt: new Date().toISOString(),
+      coursesCompleted: 0,
+      totalStudyTime: 0,
+      favoriteTopics: []
+    };
+    
+    users.push(defaultUser);
+    dataManager.saveUsers(users);
+    console.log('✅ Default admin user created: admin@apex.com / admin123');
+  }
+};
+
+// Initialize default user
+initializeDefaultUser();
+
 // Helper functions
 const generateUserId = () => Date.now().toString();
 const generateCourseId = () => 'course_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -166,15 +192,19 @@ const predefinedCourses = [
 // Authentication Routes
 app.post('/api/auth/register', async (req, res) => {
   try {
+    console.log('📝 Registration request received:', { body: req.body });
+    
     const { name, email, password } = req.body;
 
     if (!name || !email || !password) {
+      console.log('❌ Missing required fields');
       return res.status(400).json({ message: 'All fields are required' });
     }
 
     // Check if user already exists
     const existingUser = users.find(user => user.email === email);
     if (existingUser) {
+      console.log('❌ User already exists:', email);
       return res.status(400).json({ message: 'User already exists' });
     }
 
@@ -197,6 +227,7 @@ app.post('/api/auth/register', async (req, res) => {
 
     // Save users to persistent storage
     dataManager.saveUsers(users);
+    console.log('✅ New user registered:', email);
 
     // Generate JWT token
     const token = jwt.sign(
@@ -217,7 +248,7 @@ app.post('/api/auth/register', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Registration error:', error);
+    console.error('💥 Registration error:', error);
     res.status(500).json({ message: 'Server error during registration' });
   }
 });
@@ -297,7 +328,22 @@ app.get('/api/test', (req, res) => {
     message: 'Backend is working!', 
     geminiConfigured: !!(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'your_gemini_api_key_here'),
     timestamp: new Date().toISOString(),
-    status: 'Server is running properly'
+    status: 'Server is running properly',
+    usersCount: users.length,
+    sampleUsers: users.map(u => ({ id: u.id, name: u.name, email: u.email }))
+  });
+});
+
+// Debug endpoint to check users
+app.get('/api/debug/users', (req, res) => {
+  res.json({
+    totalUsers: users.length,
+    users: users.map(u => ({ 
+      id: u.id, 
+      name: u.name, 
+      email: u.email,
+      createdAt: u.createdAt 
+    }))
   });
 });
 
@@ -770,39 +816,74 @@ app.get('/api/user/courses/:courseId', authenticateToken, (req, res) => {
 });
 
 app.put('/api/user/courses/:courseId/progress', authenticateToken, (req, res) => {
-  const { progress, completed } = req.body;
-  
-  const userCourse = userCourses.find(uc => 
-    uc.userId === req.user.userId && uc.id === req.params.courseId
-  );
-  
-  if (!userCourse) {
-    return res.status(404).json({ message: 'Course not found' });
+  try {
+    console.log('Progress update request:', {
+      courseId: req.params.courseId,
+      userId: req.user.userId,
+      body: req.body
+    });
+    
+    const { progress, completed } = req.body;
+    
+    const userCourse = userCourses.find(uc => 
+      uc.userId === req.user.userId && uc.id === req.params.courseId
+    );
+    
+    if (!userCourse) {
+      console.log('Course not found for user');
+      return res.status(404).json({ message: 'Course not found' });
+    }
+    
+    // Update course progress
+    const wasCompleted = userCourse.completed;
+    userCourse.progress = progress || userCourse.progress;
+    userCourse.completed = completed !== undefined ? completed : userCourse.completed;
+    userCourse.lastAccessedAt = new Date().toISOString();
+    
+    console.log('Updated course progress:', {
+      progress: userCourse.progress,
+      completed: userCourse.completed,
+      wasCompleted
+    });
+    
+    // Update user stats if course was just completed
+    const user = users.find(u => u.id === req.user.userId);
+    if (user && completed && !wasCompleted) {
+      user.coursesCompleted += 1;
+      user.totalStudyTime += 25; // Assume 25 minutes per course
+      console.log('Updated user stats:', {
+        coursesCompleted: user.coursesCompleted,
+        totalStudyTime: user.totalStudyTime
+      });
+    }
+    
+    // Save to persistent storage
+    dataManager.saveUserCourses(userCourses);
+    dataManager.saveUsers(users);
+    
+    console.log('Progress saved successfully');
+    res.json({ 
+      message: 'Progress updated successfully', 
+      course: userCourse,
+      stats: user ? {
+        coursesCompleted: user.coursesCompleted,
+        totalStudyTime: user.totalStudyTime
+      } : null
+    });
+  } catch (error) {
+    console.error('Error updating progress:', error);
+    res.status(500).json({ message: 'Failed to update progress' });
   }
-  
-  userCourse.progress = progress || userCourse.progress;
-  userCourse.completed = completed !== undefined ? completed : userCourse.completed;
-  userCourse.lastAccessedAt = new Date().toISOString();
-  
-  // Update user stats
-  const user = users.find(u => u.id === req.user.userId);
-  if (user && completed && !userCourse.completed) {
-    user.coursesCompleted += 1;
-    user.totalStudyTime += 25; // Assume 25 minutes per course
-  }
-  
-  // Save to persistent storage
-  dataManager.saveUserCourses(userCourses);
-  dataManager.saveUsers(users);
-  
-  res.json({ message: 'Progress updated', course: userCourse });
 });
 
 app.get('/api/user/dashboard', authenticateToken, async (req, res) => {
   try {
-    const userId = req.user.id;
+    console.log('Dashboard request from user:', req.user);
+    const userId = req.user.userId; // Fix: use userId instead of id
     const userCourses = dataManager.getUserCourses();
     const userCoursesData = userCourses.filter(course => course.userId === userId);
+    
+    console.log(`Found ${userCoursesData.length} courses for user ${userId}`);
     
     // Calculate stats
     const stats = {
@@ -863,6 +944,8 @@ app.get('/api/user/dashboard', authenticateToken, async (req, res) => {
         unlocked: stats.completedCourses >= 3
       }
     ];
+
+    console.log('Dashboard stats:', stats);
 
     res.json({
       user: req.user,
