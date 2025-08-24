@@ -1,158 +1,227 @@
-# APEX - AI-Powered Course Generation Platform
+# 🌲 ApeX Project - AI-Powered Learning Platform
 
-A full-stack MERN application that generates personalized engineering courses using AI technology.
+[![React](https://img.shields.io/badge/React-18.2.0-blue.svg)](https://reactjs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
+[![Express](https://img.shields.io/badge/Express-4.x-lightgrey.svg)](https://expressjs.com/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-3.3.6-38B2AC.svg)](https://tailwindcss.com/)
 
-## Features
+**ApeX** is a modern AI-powered learning platform designed specifically for engineering students. Generate personalized courses on any topic instantly using advanced AI technology.
 
-- **Landing Page**: Beautiful hero section with animated elements
-- **Pre-defined Courses**: 6 engineering courses with detailed information
-- **AI Course Generation**: Generate custom courses using Gemini AI
-- **Interactive UI**: Smooth animations with GSAP and Framer Motion
-- **Responsive Design**: Built with Tailwind CSS
-- **Real-time Chat**: AI-powered course generation interface
+## ✨ Features
 
-## Tech Stack
+### 🎓 **AI Course Generation**
+- **Instant Course Creation**: Generate comprehensive courses on any engineering topic
+- **Structured Learning**: Organized modules with detailed content, key points, and exercises
+- **Personalized Content**: Tailored to your learning level and preferences
+- **Real-world Applications**: Practical examples and use cases
 
-### Frontend
-- React 18
-- Tailwind CSS
-- Framer Motion
-- GSAP
-- React Router
-- React Icons
-- React Hot Toast
+### 🎨 **Modern UI/UX**
+- **Forest Academia Theme**: Professional green color scheme
+- **Responsive Design**: Works perfectly on all devices
+- **Smooth Animations**: GSAP and Framer Motion powered transitions
+- **Professional Layout**: Clean, modern interface
 
-### Backend
-- Node.js
-- Express.js
-- MongoDB with Mongoose
-- Google Generative AI (Gemini)
-- CORS
+### 🔐 **User Management**
+- **Secure Authentication**: JWT-based login system
+- **Personal Dashboard**: Track your learning progress
+- **Course History**: Access all your generated courses
+- **Progress Tracking**: Monitor completion and study time
 
-## Setup Instructions
+### 📊 **Analytics & Progress**
+- **Learning Statistics**: Detailed progress metrics
+- **Completion Tracking**: Monitor course completion rates
+- **Study Time**: Track time spent learning
+- **Achievements**: Unlock badges and milestones
 
-### Backend Setup
+## 🚀 Quick Start
 
-1. Navigate to the backend directory:
-```bash
-cd backend
-```
+### Prerequisites
+- **Node.js** (v18 or higher)
+- **npm** or **yarn**
+- **Git**
 
-2. Install dependencies:
-```bash
-npm install
-```
+### Installation
 
-3. Create a `.env` file with your configuration:
-```env
-MONGODB_URI=mongodb://localhost:27017/apex
-GEMINI_API_KEY=your_gemini_api_key_here
-JWT_SECRET=your_jwt_secret_here
-PORT=5000
-```
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Ayush-Gole8/ApeX-Project.git
+   cd ApeX-Project
+   ```
 
-4. Start the server:
-```bash
-npm run dev
-```
+2. **Install Backend Dependencies**
+   ```bash
+   cd backend
+   npm install
+   ```
 
-### Frontend Setup
+3. **Install Frontend Dependencies**
+   ```bash
+   cd frontend
+   npm install
+   ```
 
-1. Navigate to the frontend directory:
-```bash
-cd frontend
-```
+4. **Set up Environment Variables**
+   
+   Create `.env` file in the backend directory:
+   ```env
+   PORT=5000
+   JWT_SECRET=your_jwt_secret_key_here
+   OPENAI_API_KEY=your_openai_api_key_here
+   ```
 
-2. Install dependencies:
-```bash
-npm install
-```
+5. **Start the Application**
+   
+   **Backend** (Terminal 1):
+   ```bash
+   cd backend
+   npm start
+   ```
+   
+   **Frontend** (Terminal 2):
+   ```bash
+   cd frontend
+   npm start
+   ```
 
-3. Start the development server:
-```bash
-npm start
-```
+6. **Open your browser**
+   ```
+   http://localhost:3000
+   ```
 
-## Environment Variables
-
-### Backend (.env)
-- `MONGODB_URI`: MongoDB connection string
-- `GEMINI_API_KEY`: Google Gemini AI API key
-- `JWT_SECRET`: JWT secret for authentication
-- `PORT`: Server port (default: 5000)
-
-## API Endpoints
-
-- `GET /api/courses` - Get all predefined courses
-- `GET /api/courses/:id` - Get specific course details
-- `POST /api/generate-course` - Generate AI course from topic
-
-## Getting Gemini API Key
-
-1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
-2. Sign in with your Google account
-3. Create a new API key
-4. Add it to your `.env` file
-
-## Features Overview
-
-### Landing Page
-- Animated hero section with floating elements
-- 6 predefined engineering course cards
-- Interactive chat interface for AI course generation
-- Responsive design with glass-morphism effects
-
-### Course Details
-- Detailed course information
-- Module breakdown with expandable sections
-- Progress tracking
-- Interactive elements
-
-### AI-Generated Courses
-- Real-time course generation using Gemini AI
-- Structured course content with modules
-- Learning resources and external links
-- Progress tracking with completion status
-
-## Design Highlights
-
-- **Dark Theme**: Modern dark interface with gradient accents
-- **Animations**: Smooth GSAP and Framer Motion animations
-- **Glass Morphism**: Translucent elements with backdrop blur
-- **Responsive**: Mobile-first design approach
-- **Interactive**: Hover effects and micro-interactions
-
-## Project Structure
+## 📁 Project Structure
 
 ```
-apex/
-├── backend/
-│   ├── server.js
-│   ├── package.json
-│   └── .env
-├── frontend/
+ApeX-Project/
+├── frontend/                 # React frontend
+│   ├── public/              # Static files
 │   ├── src/
-│   │   ├── components/
-│   │   │   ├── Landing.js
-│   │   │   ├── CourseDetail.js
-│   │   │   └── GeneratedCourse.js
-│   │   ├── App.js
-│   │   ├── index.js
-│   │   └── index.css
-│   ├── public/
-│   ├── package.json
-│   ├── tailwind.config.js
-│   └── postcss.config.js
+│   │   ├── components/      # React components
+│   │   ├── contexts/        # React contexts
+│   │   ├── utils/          # Utility functions
+│   │   └── ...
+│   └── package.json
+├── backend/                 # Node.js backend
+│   ├── routes/             # API routes
+│   ├── middleware/         # Express middleware
+│   ├── data/              # JSON data storage
+│   └── package.json
 └── README.md
 ```
 
-## Contributing
+## 🛠️ Tech Stack
+
+### **Frontend**
+- **React 18** - Modern React with hooks
+- **Tailwind CSS** - Utility-first CSS framework
+- **Framer Motion** - Advanced animations
+- **GSAP** - Professional animations
+- **React Router** - Client-side routing
+- **Axios** - HTTP client
+- **React Icons** - Icon library
+
+### **Backend**
+- **Node.js** - JavaScript runtime
+- **Express.js** - Web framework
+- **JWT** - Authentication
+- **bcrypt** - Password hashing
+- **OpenAI API** - AI course generation
+- **File System** - JSON-based data storage
+
+## 🎯 Core Features
+
+### **AI Course Generation**
+- Powered by OpenAI's GPT models
+- Generates structured course content
+- Includes modules, exercises, and assessments
+- Real-world applications and examples
+
+### **User Authentication**
+- Secure JWT-based authentication
+- Password hashing with bcrypt
+- Protected routes and middleware
+- Session management
+
+### **Data Management**
+- File-based JSON storage
+- User profiles and preferences
+- Course history and progress
+- Achievement tracking
+
+## 🎨 Design System
+
+### **Color Palette**
+- **Primary**: Emerald Custom (`#10b981`)
+- **Secondary**: Forest Green (`#22c55e`)
+- **Accent**: Warm Orange (`#f97316`)
+- **Background**: Dark Forest gradients
+- **Text**: White with various opacities
+
+### **Typography**
+- **Primary Font**: Inter (Google Fonts)
+- **Code Font**: JetBrains Mono
+- **Font Weights**: 300-900 range
+- **Professional hierarchy**
+
+## 🔧 Development
+
+### **Available Scripts**
+
+**Frontend:**
+```bash
+npm start          # Start development server
+npm build          # Build for production
+npm test           # Run tests
+```
+
+**Backend:**
+```bash
+npm start          # Start server
+npm run dev        # Start with nodemon
+```
+
+### **Environment Setup**
+1. Copy `.env.example` to `.env`
+2. Fill in your API keys and secrets
+3. Update configuration as needed
+
+## 🚀 Deployment
+
+### **Frontend Deployment**
+1. Build the project: `npm run build`
+2. Deploy the `build` folder to your hosting service
+3. Configure environment variables
+
+### **Backend Deployment**
+1. Set up your server environment
+2. Install dependencies: `npm install`
+3. Configure environment variables
+4. Start the server: `npm start`
+
+## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-## License
+## 📝 License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 👨‍💻 Author
+
+**Ayush Gole**
+- GitHub: [@Ayush-Gole8](https://github.com/Ayush-Gole8)
+- LinkedIn: [Ayush Gole](https://www.linkedin.com/in/ayush-gole8/)
+- Email: ayushgole1910@gmail.com
+
+## 🙏 Acknowledgments
+
+- OpenAI for providing the AI capabilities
+- React and Node.js communities
+- All the open-source libraries used in this project
+
+---
+
+**Made with ❤️ by Ayush Gole • 2025**

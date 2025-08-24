@@ -4,6 +4,10 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Production builds
+/frontend/build
+/backend/dist
+
 # Environment variables
 .env
 .env.local
@@ -11,18 +15,19 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
-# Build outputs
-/frontend/build
-/backend/dist
-
-# IDE
+# IDE files
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# OS
+# OS generated files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
 # Logs
@@ -38,9 +43,9 @@ pids
 # Coverage directory used by tools like istanbul
 coverage/
 
-# MongoDB
-data/
+# Database files
+/backend/data/*.json
 
-# Temporary folders
+# Temporary files
 tmp/
 temp/
