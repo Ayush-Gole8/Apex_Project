@@ -1,0 +1,416 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
+import { useInView } from 'react-intersection-observer';
+import { gsap } from 'gsap';
+import { FiUser, FiMessageCircle, FiSend, FiBook, FiClock, FiUsers, FiStar, FiLogOut, FiBarChart2, FiArrowRight } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import toast from 'react-hot-toast';
+import { useAuth } from '../contexts/AuthContext';
+import AuthModal from './AuthModal';
+import Footer from './Footer';
+
+const Landing = () => {
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [chatInput, setChatInput] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [showChat, setShowChat] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const navigate = useNavigate();
+  
+  const { user, logout, isAuthenticated } = useAuth();
+  
+  const heroRef = useRef();
+  const coursesRef = useRef();
+  
+  const [ref, inView] = useInView({
+    threshold: 0.1,
+    triggerOnce: true
+  });
+
+  useEffect(() => {
+    fetchCourses();
+    initAnimations();
+  }, []);
+
+  const fetchCourses = async () => {
+    try {
+      const response = await axios.get('http://localhost:5000/api/courses');
+      setCourses(response.data);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+      setLoading(false);
+      toast.error('Failed to load courses');
+    }
+  };
+
+  const initAnimations = () => {
+    // Hero section animation
+    gsap.fromTo(heroRef.current.children, 
+      { y: 100, opacity: 0 },
+      { y: 0, opacity: 1, duration: 1, stagger: 0.2, delay: 0.5 }
+    );
+
+    // Floating animation for hero elements
+    gsap.to(".float-element", {
+      y: -20,
+      duration: 2,
+      repeat: -1,
+      yoyo: true,
+      ease: "power2.inOut",
+      stagger: 0.3
+    });
+  };
+
+  const handleCourseClick = (courseId) => {
+    navigate(`/course/${courseId}`);
+  };
+
+  const handleChatSubmit = async (e) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
+
+    if (!isAuthenticated) {
+      toast.error('Please sign in to generate courses');
+      setShowAuthModal(true);
+      return;
+    }
+
+    console.log('Submitting chat request for topic:', chatInput);
+    setIsGenerating(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post('http://localhost:5000/api/generate-course', {
+        topic: chatInput
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('Course generation successful:', response.data);
+      navigate('/generated-course', { 
+        state: { 
+          courseData: response.data, 
+          topic: chatInput 
+        } 
+      });
+    } catch (error) {
+      console.error('Error generating course:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      console.error('Full error object:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        url: error.config?.url
+      });
+      
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.instructions || 
+                          `Failed to generate course. Status: ${error.response?.status || 'No response'}`;
+      
+      toast.error(errorMessage);
+    } finally {
+      setIsGenerating(false);
+      setChatInput('');
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-professional relative overflow-hidden">
+      {/* Animated Background - More Subtle */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none opacity-30">
+        <motion.div 
+          className="absolute -top-40 -right-40 w-80 h-80 bg-emerald-custom-500 rounded-full mix-blend-multiply filter blur-xl"
+          animate={{ 
+            scale: [1, 1.2, 1],
+            opacity: [0.1, 0.2, 0.1]
+          }}
+          transition={{ 
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        />
+        <motion.div 
+          className="absolute -bottom-40 -left-40 w-80 h-80 bg-forest-500 rounded-full mix-blend-multiply filter blur-xl"
+          animate={{ 
+            scale: [1.2, 1, 1.2],
+            opacity: [0.2, 0.1, 0.2]
+          }}
+          transition={{ 
+            duration: 10,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 2
+          }}
+        />
+        <motion.div 
+          className="absolute top-40 left-1/2 w-80 h-80 bg-emerald-custom-600 rounded-full mix-blend-multiply filter blur-xl"
+          animate={{ 
+            scale: [1, 1.3, 1],
+            opacity: [0.15, 0.25, 0.15]
+          }}
+          transition={{ 
+            duration: 12,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 4
+          }}
+        />
+      </div>
+
+      {/* Navbar */}
+      <nav className="relative z-50 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <motion.div 
+            className="flex items-center space-x-3"
+            initial={{ x: -50, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="w-12 h-12 bg-gradient-to-r from-emerald-custom-500 to-forest-500 rounded-xl flex items-center justify-center shadow-lg">
+              <span className="text-white font-black text-2xl tracking-tight">A</span>
+            </div>
+            <span className="logo-text text-white">APE<span className="text-emerald-custom-400">X</span></span>
+          </motion.div>
+          
+          <motion.div 
+            className="flex items-center space-x-4"
+            initial={{ x: 50, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            {isAuthenticated ? (
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => navigate('/dashboard')}
+                  className="nav-item flex items-center space-x-2 bg-white/10 backdrop-blur-lg rounded-full px-4 py-2 border border-white/20 hover:bg-white/20 transition-colors"
+                >
+                  <FiBarChart2 className="text-emerald-custom-500" />
+                  <span className="text-sm text-white font-medium">Dashboard</span>
+                </button>
+                
+                <button
+                  onClick={() => navigate('/my-courses')}
+                  className="nav-item flex items-center space-x-2 bg-white/10 backdrop-blur-lg rounded-full px-4 py-2 border border-white/20 hover:bg-white/20 transition-colors"
+                >
+                  <FiBook className="text-forest-500" />
+                  <span className="text-sm text-white font-medium">My Courses</span>
+                </button>
+                
+                <div className="nav-item flex items-center space-x-3 bg-white/10 backdrop-blur-lg rounded-full px-4 py-2 border border-white/20">
+                  <FiUser className="text-emerald-custom-500" />
+                  <span className="text-sm text-white font-medium">{user?.name || 'Student'}</span>
+                </div>
+                
+                <button
+                  onClick={logout}
+                  className="flex items-center justify-center w-10 h-10 bg-red-500/20 backdrop-blur-lg rounded-full border border-red-500/20 hover:bg-red-500/30 transition-colors"
+                >
+                  <FiLogOut className="text-red-400" size={16} />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowAuthModal(true)}
+                className="flex items-center space-x-3 bg-gradient-to-r from-emerald-custom-500 to-forest-500 rounded-full px-6 py-2 text-white font-medium hover:shadow-lg hover:shadow-emerald-custom-500/25 transition-all duration-300"
+              >
+                <FiUser />
+                <span>Sign In</span>
+              </button>
+            )}
+          </motion.div>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <section ref={heroRef} className="relative z-10 px-6 py-20">
+        <div className="max-w-7xl mx-auto text-center">
+          <h1 className="text-6xl md:text-8xl font-bold mb-6 float-element text-crisp">
+            <span className="gradient-text">AI-Powered</span>
+            <br />
+            <span className="text-white text-enhanced">Learning</span>
+          </h1>
+          <p className="text-xl text-gray-200 mb-8 max-w-3xl mx-auto float-element leading-relaxed">
+            Discover personalized courses tailored to your learning journey. 
+            Get instant AI-generated content on any engineering topic.
+          </p>
+          <motion.button
+            className="bg-gradient-to-r from-emerald-custom-500 to-forest-500 text-white px-8 py-4 rounded-full text-lg font-semibold hover:shadow-lg hover:shadow-emerald-custom-500/25 transition-all duration-300 float-element"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowChat(true)}
+          >
+            Start Learning Now
+          </motion.button>
+        </div>
+      </section>
+
+      {/* Featured Courses */}
+      <section ref={coursesRef} className="relative z-10 px-6 py-20">
+        <div className="max-w-7xl mx-auto">
+          <motion.h2 
+            className="text-4xl font-bold text-center mb-16 gradient-text"
+            initial={{ y: 50, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6 }}
+          >
+            Featured Engineering Courses
+          </motion.h2>
+          
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-emerald-custom-500"></div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" ref={ref}>
+              {courses.map((course, index) => (
+                <motion.div
+                  key={course.id}
+                  className="module-card p-6 cursor-pointer group"
+                  initial={{ y: 50, opacity: 0 }}
+                  animate={inView ? { y: 0, opacity: 1 } : { y: 50, opacity: 0 }}
+                  transition={{ 
+                    duration: 0.6, 
+                    delay: index * 0.1,
+                    ease: [0.25, 0.46, 0.45, 0.94]
+                  }}
+                  onClick={() => handleCourseClick(course.id)}
+                  whileHover={{ 
+                    y: -8, 
+                    scale: 1.02,
+                    transition: { duration: 0.3, ease: "easeOut" }
+                  }}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-r from-emerald-custom-500 to-forest-500 rounded-xl flex items-center justify-center">
+                      <FiBook className="text-white text-xl" />
+                    </div>
+                    <span className="bg-white/15 text-white text-xs px-3 py-1 rounded-full font-medium">
+                      {course.difficulty}
+                    </span>
+                  </div>
+                  
+                  <h3 className="text-xl font-bold text-white mb-3 group-hover:text-emerald-custom-300 transition-colors">
+                    {course.title}
+                  </h3>
+                  
+                  <p className="text-white/80 mb-4 text-sm leading-relaxed">
+                    {course.description}
+                  </p>
+                  
+                  <div className="flex items-center justify-between text-white/70 text-sm mb-4">
+                    <div className="flex items-center space-x-1">
+                      <FiClock size={14} />
+                      <span>{course.duration}</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <FiUsers size={14} />
+                      <span>{Math.floor(Math.random() * 1000) + 500}+</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-1 text-yellow-400">
+                      <FiStar size={14} />
+                      <span className="text-sm font-medium">4.{Math.floor(Math.random() * 3) + 7}</span>
+                    </div>
+                    <div className="flex items-center space-x-1 text-emerald-custom-400">
+                      <span className="text-sm font-medium">{course.topics.length} modules</span>
+                      <FiArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Chat Interface */}
+      <motion.div
+        className={`fixed bottom-6 right-6 z-50 ${showChat ? 'w-96' : 'w-auto'}`}
+        initial={false}
+        animate={{ 
+          width: showChat ? 384 : 'auto',
+          height: showChat ? 400 : 60 
+        }}
+        transition={{ duration: 0.3 }}
+      >
+        {!showChat ? (
+          <motion.button
+            className="bg-gradient-to-r from-emerald-custom-500 to-forest-500 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
+            onClick={() => setShowChat(true)}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+          >
+            <FiMessageCircle size={24} />
+          </motion.button>
+        ) : (
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 h-full flex flex-col">
+            <div className="p-4 border-b border-white/20 flex items-center justify-between">
+              <h3 className="text-white font-semibold">AI Course Generator</h3>
+              <button 
+                onClick={() => setShowChat(false)}
+                className="text-white/60 hover:text-white transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="flex-1 p-4 flex flex-col justify-center">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-gradient-to-r from-emerald-custom-500 to-forest-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <FiBook className="text-white text-2xl" />
+                </div>
+                <p className="text-white/90 text-sm leading-relaxed">
+                  Ask me to create a course on any engineering topic!
+                </p>
+              </div>
+            </div>
+            
+            <form onSubmit={handleChatSubmit} className="p-4 border-t border-white/20">
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  placeholder="e.g., Machine Learning for Beginners"
+                  className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:border-emerald-custom-500 text-sm"
+                  disabled={isGenerating}
+                />
+                <button
+                  type="submit"
+                  disabled={isGenerating || !chatInput.trim()}
+                  className="bg-gradient-to-r from-emerald-custom-500 to-forest-500 text-white p-2 rounded-lg hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isGenerating ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <FiSend size={16} />
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+      </motion.div>
+
+      {/* Auth Modal */}
+      <AuthModal 
+        isOpen={showAuthModal} 
+        onClose={() => setShowAuthModal(false)} 
+      />
+
+      {/* Footer */}
+      <Footer />
+    </div>
+  );
+};
+
+export default Landing;
