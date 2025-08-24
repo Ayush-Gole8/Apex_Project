@@ -189,26 +189,53 @@ npm run dev        # Start with nodemon
 
 ## 🚀 Deployment
 
-### **Render Deployment (Recommended)**
+### **Render Deployment (Complete Setup)**
 
-**Backend Deployment:**
-1. Push your code to GitHub
-2. Connect your GitHub repo to Render
-3. Create a new Web Service
-4. Set build command: `npm install`
-5. Set start command: `npm start`
-6. Add environment variables:
-   - `NODE_ENV=production`
-   - `JWT_SECRET=your_secure_secret`
-   - `OPENAI_API_KEY=your_openai_key`
-   - `FRONTEND_URL=https://your-frontend-url.onrender.com`
+#### **Backend Deployment:**
+1. **Create Web Service** on Render
+2. **Connect GitHub** repository: `ApeX-Project`
+3. **Configure Settings:**
+   ```
+   Name: apex-backend
+   Environment: Node
+   Root Directory: backend
+   Build Command: npm install
+   Start Command: npm start
+   ```
+4. **Environment Variables:**
+   ```
+   NODE_ENV=production
+   JWT_SECRET=your_super_secure_jwt_secret
+   GEMINI_API_KEY=your_gemini_api_key
+   FRONTEND_URL=https://apex-frontend.onrender.com
+   PORT=5000
+   ```
 
-**Frontend Deployment:**
-1. Create a new Static Site on Render
-2. Set build command: `npm install && npm run build`
-3. Set publish directory: `build`
-4. Add environment variable:
-   - `REACT_APP_API_URL=https://your-backend-url.onrender.com`
+#### **Frontend Deployment:**
+1. **Create Static Site** on Render
+2. **Connect GitHub** repository: `ApeX-Project`
+3. **Configure Settings:**
+   ```
+   Name: apex-frontend
+   Root Directory: frontend
+   Build Command: npm install && npm run build
+   Publish Directory: build
+   ```
+4. **Environment Variable:**
+   ```
+   REACT_APP_API_URL=https://apex-backend.onrender.com
+   ```
+
+#### **After Deployment:**
+1. Update backend CORS with actual frontend URL
+2. Update frontend API URL with actual backend URL
+3. Test the complete application flow
+4. Monitor logs for any issues
+
+**Live URLs:**
+- Frontend: `https://apex-frontend.onrender.com`
+- Backend API: `https://apex-backend.onrender.com`
+- Health Check: `https://apex-backend.onrender.com/health`
 
 ### **Other Deployment Options**
 

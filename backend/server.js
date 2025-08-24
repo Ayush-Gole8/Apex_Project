@@ -29,7 +29,8 @@ if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'your_gemini_ap
 const corsOptions = {
   origin: process.env.FRONTEND_URL || [
     'http://localhost:3000',
-    'https://apex-frontend.onrender.com' // Update with your actual frontend URL
+    'https://apex-frontend.onrender.com',
+    'https://your-actual-frontend-url.onrender.com' // Update with your actual frontend URL after deployment
   ],
   credentials: true,
   optionsSuccessStatus: 200

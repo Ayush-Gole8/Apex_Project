@@ -26,8 +26,11 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "build:production": "REACT_APP_API_URL=https://your-backend-app.onrender.com npm run build"
+    "eject": "react-scripts eject"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   },
   "eslintConfig": {
     "extends": [

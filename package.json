@@ -1,0 +1,32 @@
+{
+  "name": "apex-project",
+  "version": "1.0.0",
+  "description": "AI-Powered Learning Platform with Gemini AI and RAG",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "cd backend && npm start",
+    "install-backend": "cd backend && npm install",
+    "install-frontend": "cd frontend && npm install",
+    "build-frontend": "cd frontend && npm run build",
+    "dev-backend": "cd backend && npm run dev",
+    "dev-frontend": "cd frontend && npm start"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Ayush-Gole8/ApeX-Project.git"
+  },
+  "keywords": [
+    "ai",
+    "learning",
+    "gemini",
+    "rag",
+    "education",
+    "react",
+    "nodejs"
+  ],
+  "author": "Ayush Gole",
+  "license": "MIT"
+}
