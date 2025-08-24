@@ -47,16 +47,26 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
+      console.log('🔐 Login attempt:', { 
+        email, 
+        apiUrl: `${API_BASE_URL}/api/auth/login`,
+        baseUrl: API_BASE_URL 
+      });
+      
       const response = await axios.post(`${API_BASE_URL}/api/auth/login`, {
         email,
         password
       });
       
+      console.log('✅ Login successful:', response.data);
       localStorage.setItem('token', response.data.token);
       setUser(response.data.user);
       setIsAuthenticated(true);
       return { success: true };
     } catch (error) {
+      console.error('❌ Login error:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
       return { 
         success: false, 
         message: error.response?.data?.message || 'Login failed' 

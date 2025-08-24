@@ -44,6 +44,9 @@ if (process.env.NODE_ENV === 'production') {
 // Middleware to log requests
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  if (req.method === 'POST') {
+    console.log('Request body:', req.body);
+  }
   next();
 });
 
@@ -221,21 +224,26 @@ app.post('/api/auth/register', async (req, res) => {
 
 app.post('/api/auth/login', async (req, res) => {
   try {
+    console.log('🔐 Login request received:', { body: req.body, headers: req.headers['content-type'] });
+    
     const { email, password } = req.body;
 
     if (!email || !password) {
+      console.log('❌ Missing email or password');
       return res.status(400).json({ message: 'Email and password are required' });
     }
 
     // Find user
     const user = users.find(u => u.email === email);
     if (!user) {
+      console.log('❌ User not found:', email);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
     // Check password
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
+      console.log('❌ Invalid password for user:', email);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
@@ -246,6 +254,7 @@ app.post('/api/auth/login', async (req, res) => {
       { expiresIn: '7d' }
     );
 
+    console.log('✅ Login successful for user:', email);
     res.json({
       message: 'Login successful',
       token,
@@ -258,7 +267,7 @@ app.post('/api/auth/login', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('💥 Login error:', error);
     res.status(500).json({ message: 'Server error during login' });
   }
 });
