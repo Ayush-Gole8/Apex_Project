@@ -1,97 +1,97 @@
+/**
+ * Data Manager for Apex Learning Platform
+ * Handles data persistence for users, courses, and user progress
+ */
+
 const fs = require('fs');
 const path = require('path');
 
-// Data storage paths
-const DATA_DIR = path.join(__dirname, 'data');
-const USERS_FILE = path.join(DATA_DIR, 'users.json');
-const COURSES_FILE = path.join(DATA_DIR, 'courses.json');
-const USER_COURSES_FILE = path.join(DATA_DIR, 'user_courses.json');
+// File paths
+const USERS_FILE = path.join(__dirname, 'data', 'users.json');
+const COURSES_FILE = path.join(__dirname, 'data', 'courses.json');
+const USER_COURSES_FILE = path.join(__dirname, 'data', 'userCourses.json');
+const LEARNING_PATHS_FILE = path.join(__dirname, 'data', 'learningPaths.json');
+const SKILL_ASSESSMENTS_FILE = path.join(__dirname, 'data', 'skillAssessments.json');
+const CODE_SNIPPETS_FILE = path.join(__dirname, 'data', 'codeSnippets.json');
 
-// Ensure data directory exists
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-}
-
-// Initialize data files if they don't exist
-function initializeDataFiles() {
-  if (!fs.existsSync(USERS_FILE)) {
-    fs.writeFileSync(USERS_FILE, JSON.stringify([], null, 2));
-  }
-  if (!fs.existsSync(COURSES_FILE)) {
-    fs.writeFileSync(COURSES_FILE, JSON.stringify([], null, 2));
-  }
-  if (!fs.existsSync(USER_COURSES_FILE)) {
-    fs.writeFileSync(USER_COURSES_FILE, JSON.stringify([], null, 2));
-  }
-}
-
-// Data management functions
-const dataManager = {
-  // Users
-  getUsers: () => {
-    try {
-      const data = fs.readFileSync(USERS_FILE, 'utf8');
-      return JSON.parse(data);
-    } catch (error) {
-      console.error('Error reading users file:', error);
-      return [];
+// Helper function to read a JSON file
+const readJsonFile = (filePath, defaultValue = []) => {
+  try {
+    if (!fs.existsSync(filePath)) {
+      console.log(`File not found, creating: ${filePath}`);
+      fs.writeFileSync(filePath, JSON.stringify(defaultValue, null, 2));
+      return defaultValue;
     }
-  },
-
-  saveUsers: (users) => {
-    try {
-      fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
-      return true;
-    } catch (error) {
-      console.error('Error saving users file:', error);
-      return false;
-    }
-  },
-
-  // Courses
-  getCourses: () => {
-    try {
-      const data = fs.readFileSync(COURSES_FILE, 'utf8');
-      return JSON.parse(data);
-    } catch (error) {
-      console.error('Error reading courses file:', error);
-      return [];
-    }
-  },
-
-  saveCourses: (courses) => {
-    try {
-      fs.writeFileSync(COURSES_FILE, JSON.stringify(courses, null, 2));
-      return true;
-    } catch (error) {
-      console.error('Error saving courses file:', error);
-      return false;
-    }
-  },
-
-  // User Courses
-  getUserCourses: () => {
-    try {
-      const data = fs.readFileSync(USER_COURSES_FILE, 'utf8');
-      return JSON.parse(data);
-    } catch (error) {
-      console.error('Error reading user courses file:', error);
-      return [];
-    }
-  },
-
-  saveUserCourses: (userCourses) => {
-    try {
-      fs.writeFileSync(USER_COURSES_FILE, JSON.stringify(userCourses, null, 2));
-      return true;
-    } catch (error) {
-      console.error('Error saving user courses file:', error);
-      return false;
-    }
+    
+    const data = fs.readFileSync(filePath, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error(`Error reading file ${filePath}:`, error);
+    return defaultValue;
   }
 };
 
-// Initialize data files on startup
-initializeDataFiles();
+// Helper function to write to a JSON file
+const writeJsonFile = (filePath, data) => {
+  try {
+    // Create directory if it doesn't exist
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+    return true;
+  } catch (error) {
+    console.error(`Error writing to file ${filePath}:`, error);
+    return false;
+  }
+};
 
-module.exports = dataManager;
+// User data functions
+const getUsers = () => readJsonFile(USERS_FILE);
+const saveUsers = (users) => writeJsonFile(USERS_FILE, users);
+
+// Course data functions
+const getCourses = () => readJsonFile(COURSES_FILE);
+const saveCourses = (courses) => writeJsonFile(COURSES_FILE, courses);
+
+// User course data functions
+const getUserCourses = () => readJsonFile(USER_COURSES_FILE);
+const saveUserCourses = (userCourses) => writeJsonFile(USER_COURSES_FILE, userCourses);
+
+// Learning paths functions
+const getLearningPaths = () => readJsonFile(LEARNING_PATHS_FILE);
+const saveLearningPaths = (paths) => writeJsonFile(LEARNING_PATHS_FILE, paths);
+
+// Skill assessments functions
+const getSkillAssessments = () => readJsonFile(SKILL_ASSESSMENTS_FILE);
+const saveSkillAssessments = (assessments) => writeJsonFile(SKILL_ASSESSMENTS_FILE, assessments);
+
+// Code snippets functions
+const getCodeSnippets = () => readJsonFile(CODE_SNIPPETS_FILE);
+const saveCodeSnippets = (snippets) => writeJsonFile(CODE_SNIPPETS_FILE, snippets);
+
+// Generate a UUID (simple version)
+const generateUUID = () => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
+module.exports = {
+  getUsers,
+  saveUsers,
+  getCourses,
+  saveCourses,
+  getUserCourses,
+  saveUserCourses,
+  getLearningPaths,
+  saveLearningPaths,
+  getSkillAssessments,
+  saveSkillAssessments,
+  getCodeSnippets,
+  saveCodeSnippets,
+  generateUUID
+};

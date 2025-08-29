@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { useInView } from 'react-intersection-observer';
-import { gsap } from 'gsap';
-import { FiUser, FiMessageCircle, FiSend, FiBook, FiClock, FiUsers, FiStar, FiLogOut, FiBarChart2, FiArrowRight } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
+import { motion, useAnimation } from 'framer-motion';
+import { useInView } from 'react-intersection-observer';
+import { FiArrowRight, FiChevronDown, FiCode, FiDatabase, FiLayers, FiCpu, FiBox, FiCommand, FiSend, 
+  FiUser, FiBarChart2, FiBook, FiLogOut, FiMessageCircle, FiClock, FiUsers, FiStar } from 'react-icons/fi';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { useAuth } from '../contexts/AuthContext';
-import AuthModal from './AuthModal';
-import Footer from './Footer';
+import gsap from 'gsap';
 import API_BASE_URL from '../config/api';
+import { useAuth } from '../contexts/AuthContext';
+import Footer from './Footer';
+import AuthModal from './AuthModal';
 
 const Landing = () => {
   const [courses, setCourses] = useState([]);
@@ -37,13 +38,46 @@ const Landing = () => {
 
   const fetchCourses = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/courses`);
+      console.log('Fetching courses from:', `${API_BASE_URL}/api/courses`);
+      const response = await axios.get(`${API_BASE_URL}/api/courses`, {
+        timeout: 10000 // 10 second timeout
+      });
       setCourses(response.data);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching courses:', error);
+      // Use sample courses if API is unavailable
+      setCourses([
+        {
+          id: 1,
+          title: "Data Structures & Algorithms",
+          description: "Master fundamental DSA concepts",
+          difficulty: "Intermediate",
+          duration: "4 weeks",
+          topics: ["Arrays", "Linked Lists", "Trees", "Graphs", "Sorting", "Searching"],
+          color: "bg-gradient-to-r from-blue-500 to-purple-600"
+        },
+        {
+          id: 2,
+          title: "Machine Learning Fundamentals",
+          description: "Introduction to ML algorithms and concepts",
+          difficulty: "Beginner",
+          duration: "6 weeks",
+          topics: ["Linear Regression", "Decision Trees", "Neural Networks", "Feature Engineering"],
+          color: "bg-gradient-to-r from-green-500 to-teal-600"
+        },
+        {
+          id: 3,
+          title: "Web Development with React",
+          description: "Build modern web applications",
+          difficulty: "Intermediate",
+          duration: "5 weeks",
+          topics: ["Components", "State Management", "Hooks", "Router", "API Integration"],
+          color: "bg-gradient-to-r from-orange-500 to-red-600"
+        }
+      ]);
       setLoading(false);
-      toast.error('Failed to load courses');
+      toast.error('Failed to load courses from API, showing sample data');
     }
   };
 
@@ -73,6 +107,7 @@ const Landing = () => {
     e.preventDefault();
     if (!chatInput.trim()) return;
 
+    // Enforce authentication with clear error message
     if (!isAuthenticated) {
       toast.error('Please sign in to generate courses');
       setShowAuthModal(true);
@@ -83,16 +118,47 @@ const Landing = () => {
     setIsGenerating(true);
     try {
       const token = localStorage.getItem('token');
+      
+      // First try to ping the backend to check connectivity
+      try {
+        await axios.get(`${API_BASE_URL}/api/ping`, { 
+          timeout: 3000,
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+      } catch (pingError) {
+        console.error('Backend ping failed:', pingError);
+        toast.error('Cannot connect to course generator service. Please check your connection.');
+        setIsGenerating(false);
+        return;
+      }
+      
       const response = await axios.post(`${API_BASE_URL}/api/generate-course`, {
         topic: chatInput
       }, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
-        }
+        },
+        timeout: 30000 // 30 second timeout for course generation
       });
       
       console.log('Course generation successful:', response.data);
+      
+      // Handle different response types
+      if (response.data.non_educational) {
+        // Non-educational content request
+        toast.error(response.data.message);
+        return;
+      }
+      
+      if (response.data.error) {
+        // There was an error but we have fallback content
+        console.warn('Using fallback content due to:', response.data.error);
+        toast.warning('Using simplified course structure. Some features may be limited.');
+      }
+      
+      // If we have rawContent and sections are available in it, we'll extract sections in GeneratedCourse
+      // The backend already tried to extract sections from rawContent
       navigate('/generated-course', { 
         state: { 
           courseData: response.data, 
@@ -115,6 +181,8 @@ const Landing = () => {
       
       if (error.code === 'ERR_NETWORK' || error.message.includes('Network Error')) {
         errorMessage = 'Cannot connect to server. Please check if the backend is running.';
+      } else if (error.code === 'ECONNABORTED') {
+        errorMessage = 'Request timed out. The server might be busy or unavailable.';
       } else if (error.response?.status === 401) {
         errorMessage = 'Authentication failed. Please sign in again.';
         setShowAuthModal(true);
@@ -216,7 +284,7 @@ const Landing = () => {
                 
                 <div className="nav-item flex items-center space-x-3 bg-white/10 backdrop-blur-lg rounded-full px-4 py-2 border border-white/20">
                   <FiUser className="text-emerald-custom-500" />
-                  <span className="text-sm text-white font-medium">{user?.name || 'Student'}</span>
+                  <span className="text-sm text-white font-medium">{user?.name || 'Guest'}</span>
                 </div>
                 
                 <button
@@ -410,9 +478,7 @@ const Landing = () => {
             </form>
           </div>
         )}
-      </motion.div>
-
-      {/* Auth Modal */}
+      </motion.div>      {/* Auth Modal */}
       <AuthModal 
         isOpen={showAuthModal} 
         onClose={() => setShowAuthModal(false)} 

@@ -15,13 +15,19 @@ export const ThemeProvider = ({ children }) => {
 
   useEffect(() => {
     // Check for saved theme preference or default to dark
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-      setIsDark(savedTheme === 'dark');
-    } else {
-      // Check system preference
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      setIsDark(prefersDark);
+    try {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme) {
+        setIsDark(savedTheme === 'dark');
+      } else {
+        // Check system preference
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        setIsDark(prefersDark);
+      }
+    } catch (error) {
+      console.error('Error reading theme preference:', error);
+      // Default to dark theme if there's an error
+      setIsDark(true);
     }
   }, []);
 

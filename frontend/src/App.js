@@ -1,44 +1,48 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
+
+// Components
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+import BackendStatusChecker from './components/BackendStatusChecker';
 import Landing from './components/Landing';
-import GeneratedCourse from './components/GeneratedCourse';
-import CourseDetail from './components/CourseDetail';
-import PreviousCourses from './components/PreviousCourses';
 import Dashboard from './components/Dashboard';
+import GeneratedCourse from './components/GeneratedCourse';
+import PreviousCourses from './components/PreviousCourses';
+import CodePlaygroundPage from './components/CodePlaygroundPage';
+import LoginPage from './components/LoginPage';
+import SkillAssessment from './components/SkillAssessment';
+import LearningPath from './components/LearningPath';
 
 function App() {
   return (
-    <AuthProvider>
-      <Router
-        future={{
-          v7_startTransition: true,
-          v7_relativeSplatPath: true
-        }}
-      >
-        <div className="App">
-          <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route path="/generated-course" element={<GeneratedCourse />} />
-            <Route path="/course/:id" element={<CourseDetail />} />
-            <Route path="/my-courses" element={<PreviousCourses />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-          </Routes>
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              duration: 3000,
-              style: {
-                background: 'rgba(0, 0, 0, 0.8)',
-                color: '#fff',
-                backdropFilter: 'blur(10px)',
-              },
-            }}
-          />
-        </div>
-      </Router>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <Router>
+          <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900">
+            <Navbar />
+            <BackendStatusChecker>
+              <main className="flex-1">
+                <Routes>
+                  <Route path="/" element={<Landing />} />
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/course/:courseId" element={<GeneratedCourse />} />
+                  <Route path="/courses" element={<PreviousCourses />} />
+                  <Route path="/playground" element={<CodePlaygroundPage />} />
+                  <Route path="/assessment" element={<SkillAssessment />} />
+                  <Route path="/learning-path" element={<LearningPath />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </main>
+            </BackendStatusChecker>
+            <Footer />
+          </div>
+        </Router>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

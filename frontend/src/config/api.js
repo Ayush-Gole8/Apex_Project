@@ -1,10 +1,18 @@
-// API Configuration for Single Deployment
-const API_BASE_URL = process.env.REACT_APP_API_URL || 
-  (process.env.NODE_ENV === 'production' 
-    ? '' // Same domain in production (single deployment)
-    : 'http://localhost:5000');
+// API Configuration
+export const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://your-production-url.com'  // Replace with your actual production URL
+  : 'http://localhost:3001';
 
-console.log('API Base URL:', API_BASE_URL);
-console.log('Environment:', process.env.NODE_ENV);
+// Test backend connection
+export const testBackendConnection = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/ping`);
+    const data = await response.json();
+    return { success: true, data };
+  } catch (error) {
+    console.error('Backend connection test failed:', error);
+    return { success: false, error: error.message };
+  }
+};
 
 export default API_BASE_URL;

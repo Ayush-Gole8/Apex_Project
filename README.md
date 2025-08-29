@@ -280,3 +280,76 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **Made with ❤️ by Ayush Gole • 2025**
+
+# Apex Learning Platform
+
+## Backend Connection Troubleshooting
+
+If you're experiencing connection issues between the frontend and backend, follow these steps:
+
+### Step 1: Start the backend server on port 3001
+
+To ensure the backend server runs on the correct port (3001) which matches the frontend configuration:
+
+1. Navigate to the backend directory
+```
+cd e:\Apex\backend
+```
+
+2. Run the server starter script
+```
+node start-server.js
+```
+
+Or simply double-click the `start-backend.bat` file in the backend folder.
+
+### Step 2: Verify the backend is running
+
+Open your browser and navigate to:
+```
+http://localhost:3001/api/ping
+```
+
+You should see a JSON response indicating the server is running.
+
+### Step 3: Check your frontend configuration
+
+The frontend is configured to connect to `http://localhost:3001` as specified in the `api.js` file.
+
+If you need to use a different port, modify both:
+- The PORT in the backend `.env` file
+- The API_BASE_URL in the frontend `config/api.js` file
+
+### Common Issues and Solutions
+
+1. **Connection Refused Error**
+   - Cause: Backend server isn't running or is running on a different port
+   - Solution: Start the backend server using the instructions above
+
+2. **API Endpoint Not Found**
+   - Cause: Backend server is running but endpoints aren't available
+   - Solution: Check server.js to ensure the required endpoints are defined
+
+3. **CORS Errors**
+   - Cause: Backend CORS settings don't allow frontend connection
+   - Solution: Check CORS configuration in server.js
+
+4. **Authentication Errors**
+   - Cause: JWT token issues or missing authorization
+   - Solution: Check token generation and validation in AuthContext.js and server.js
+
+## Quick Setup for Development
+
+1. Start backend:
+```
+cd backend
+node start-server.js
+```
+
+2. Start frontend:
+```
+cd frontend
+npm start
+```
+
+The application should now work correctly.

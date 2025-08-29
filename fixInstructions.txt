@@ -1,0 +1,56 @@
+// Fix for the conditionally called hook issue in GeneratedCourse.js
+// 1. Replace the second useEffect that has if (!token) return; with:
+useEffect(() => {
+  const fetchCourseStatus = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error('Please log in to view courses');
+        navigate('/');
+        return;
+      }
+      
+      if (!courseData) {
+        return;
+      }
+      
+      // Find course ID if it exists in user courses
+      const response = await axios.get(`${API_BASE_URL}/api/user/courses`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const courses = response.data.courses;
+      const matchingCourse = courses.find(c => 
+        c.topic === topic && 
+        c.course?.title === courseData?.title
+      );
+      
+      if (matchingCourse) {
+        setCourseId(matchingCourse.id);
+        setIsLiked(!!matchingCourse.liked);
+      }
+    } catch (error) {
+      console.error('Error fetching course status:', error);
+    }
+  };
+  
+  fetchCourseStatus();
+}, [topic, courseData, navigate]);
+
+// 2. Make sure to remove the original problematic useEffect completely
+
+// Fix for the unused variable warning in Dashboard.js
+// 1. Rename the error state variable to errorMessage (or any other name)
+// 2. Change any setError calls to setErrorMessage
+// 3. Update any references to error to use errorMessage instead
+
+// Example:
+const [errorMessage, setErrorMessage] = useState(null); // instead of error, setError
+
+// and when setting it:
+setErrorMessage('Failed to load dashboard data'); // instead of setError
+
+// The error variable was declared but never used in the component's rendering
