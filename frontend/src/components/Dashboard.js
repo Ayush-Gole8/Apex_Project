@@ -1,335 +1,359 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { 
-  FiArrowLeft, FiBook, FiClock, FiTrendingUp, FiAward, 
-  FiCalendar, FiTarget, FiStar, FiPlay, FiBarChart2
-} from 'react-icons/fi';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import toast from 'react-hot-toast';
-import Footer from './Footer';
-import API_BASE_URL from '../config/api';
+import { useTheme } from '../contexts/ThemeContext';
+import { FaBookOpen, FaClock, FaGraduationCap, FaBrain, FaRobot, FaHistory } from 'react-icons/fa';
+import GeneratedCourse from './GeneratedCourse';
+import { toast } from 'react-hot-toast';
+import { apiUtils } from '../utils/api';
 
 const Dashboard = () => {
-  const [dashboardData, setDashboardData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { user, logout } = useAuth();
+  const { isDarkMode } = useTheme();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
-
+  
+  const [dashboardData, setDashboardData] = useState(null);
+  const [userCourses, setUserCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [topic, setTopic] = useState('');
+  const [generating, setGenerating] = useState(false);
+  
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/');
-      return;
-    }
-    fetchDashboardData();
-    
-    // Auto-refresh dashboard data every 30 seconds
-    const interval = setInterval(fetchDashboardData, 30000);
-    
-    // Refresh when component becomes visible
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        fetchDashboardData();
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem('token');
+        if (!token) {
+          navigate('/');
+          return;
+        }
+        
+        // Fetch dashboard stats and user courses
+        const [dashboardResponse, coursesResponse] = await Promise.all([
+          apiUtils.getUserDashboard(),
+          apiUtils.getUserCourses()
+        ]);
+        
+        if (!dashboardResponse.ok || !coursesResponse.ok) {
+          throw new Error('Failed to fetch data');
+        }
+        
+        const dashboardJson = await dashboardResponse.json();
+        const coursesJson = await coursesResponse.json();
+        setDashboardData(dashboardJson);
+        setUserCourses(coursesJson.courses || []);
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+        setError('Failed to load dashboard data');
+      } finally {
+        setLoading(false);
       }
     };
     
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    return () => {
-      clearInterval(interval);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [isAuthenticated, navigate]);
-
-  const fetchDashboardData = async () => {
+    fetchDashboardData();
+  }, [navigate]);
+  
+  const handleGenerateCourse = async (e) => {
+    e.preventDefault();
+    if (!topic.trim()) {
+      toast.error('Please enter a topic');
+      return;
+    }
+    setGenerating(true);
     try {
-      const token = localStorage.getItem('token');
-      console.log('Fetching dashboard data with token:', token ? 'present' : 'missing');
-      
-      const response = await axios.get(`${API_BASE_URL}/api/user/dashboard`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      const response = await apiUtils.generateCourse(topic);
+      const data = await response.json();
+      if (response.ok) {
+        setSelectedCourse(data.course || data);
+        toast.success('Course generated successfully!');
+        // Refresh user courses
+        const coursesResponse = await apiUtils.getUserCourses();
+        if (coursesResponse.ok) {
+          const coursesData = await coursesResponse.json();
+          setUserCourses(coursesData.courses || []);
         }
-      });
-      
-      console.log('Dashboard data received:', response.data);
-      setDashboardData(response.data);
+      } else {
+        toast.error(data.message || 'Failed to generate course');
+      }
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      console.error('Error response:', error.response?.data);
-      toast.error('Failed to load dashboard data');
+      console.error('Error generating course:', error);
+      toast.error('Failed to generate course');
     } finally {
-      setLoading(false);
+      setGenerating(false);
     }
   };
-
-  // Add refresh function
-  const refreshDashboard = () => {
-    setLoading(true);
-    fetchDashboardData();
+  
+  const handleCourseClick = (course) => {
+    setSelectedCourse(course);
   };
-
+  
+  const handleBackToDashboard = () => {
+    setSelectedCourse(null);
+  };
+  
+  const handleCourseUpdate = async () => {
+    try {
+      const [coursesResponse, dashboardResponse] = await Promise.all([
+        apiUtils.getUserCourses(),
+        apiUtils.getUserDashboard()
+      ]);
+      
+      if (coursesResponse.ok) {
+        const coursesData = await coursesResponse.json();
+        setUserCourses(coursesData.courses || []);
+      }
+      if (dashboardResponse.ok) {
+        const dashboardJson = await dashboardResponse.json();
+        setDashboardData(dashboardJson);
+      }
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    }
+  };
+  
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-dark-forest-800 via-dark-forest-700 to-dark-forest-800 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-emerald-custom-500"></div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-dark-forest-800 via-dark-forest-700 to-dark-forest-800">
-      {/* Header */}
-      <div className="px-6 py-4">
-        <div className="max-w-7xl mx-auto">
-          <motion.button
-            onClick={() => navigate('/')}
-            className="flex items-center space-x-2 text-white/70 hover:text-white transition-colors mb-6"
-            initial={{ x: -20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-          >
-            <FiArrowLeft />
-            <span>Back to home</span>
-          </motion.button>
-        </div>
+  
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4">
+        <div className="text-red-500 text-xl mb-4">Error: {error}</div>
+        <button 
+          onClick={() => navigate('/')} 
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          Return to Home
+        </button>
       </div>
-
-      {/* Dashboard Content */}
-      <div className="px-6 py-8">
-        <div className="max-w-7xl mx-auto">
-          {/* Welcome Section */}
-          <motion.div
-            className="mb-8"
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-          >
-            <h1 className="text-4xl font-bold text-white mb-2">
-              Welcome back, {dashboardData?.user?.name}! 👋
-            </h1>
-            <p className="text-white/70">
-              Here's your learning progress and achievements
-            </p>
-          </motion.div>
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <motion.div
-              className="bg-gradient-to-r from-emerald-custom-600 to-emerald-custom-700 p-6 rounded-2xl"
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.1 }}
+    );
+  }
+  
+  if (selectedCourse) {
+    return (
+      <GeneratedCourse 
+        course={selectedCourse} 
+        onBack={handleBackToDashboard}
+        onUpdate={handleCourseUpdate}
+      />
+    );
+  }
+  
+  return (
+    <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-800'}`}>
+      {/* Header */}
+      <header className={`py-4 px-4 md:px-8 ${isDarkMode ? 'bg-gray-800' : 'bg-white shadow'}`}>
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <Link to="/" className="text-2xl font-bold">
+            <span className="text-green-600">Ape</span>X
+          </Link>
+          
+          <div className="flex items-center">
+            <button
+              onClick={() => logout()}
+              className={`px-4 py-2 rounded-md ${
+                isDarkMode 
+                  ? 'bg-gray-700 hover:bg-gray-600' 
+                  : 'bg-gray-200 hover:bg-gray-300'
+              }`}
             >
-              <div className="flex items-center justify-between mb-4">
-                <FiBook className="text-white text-2xl" />
-                <span className="text-white/70 text-sm">Total</span>
-              </div>
-              <h3 className="text-3xl font-bold text-white mb-1">
-                {dashboardData?.stats?.totalCourses || 0}
-              </h3>
-              <p className="text-white/80 text-sm">Courses Generated</p>
-            </motion.div>
-
-            <motion.div
-              className="bg-gradient-to-r from-forest-600 to-forest-700 p-6 rounded-2xl"
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <FiTarget className="text-white text-2xl" />
-                <span className="text-white/70 text-sm">Completed</span>
-              </div>
-              <h3 className="text-3xl font-bold text-white mb-1">
-                {dashboardData?.stats?.completedCourses || 0}
-              </h3>
-              <p className="text-white/80 text-sm">Courses Finished</p>
-            </motion.div>
-
-            <motion.div
-              className="bg-gradient-to-r from-emerald-custom-500 to-dark-forest-600 p-6 rounded-2xl"
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.3 }}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <FiClock className="text-white text-2xl" />
-                <span className="text-white/70 text-sm">Study Time</span>
-              </div>
-              <h3 className="text-3xl font-bold text-white mb-1">
-                {dashboardData?.stats?.totalStudyTime || 0}m
-              </h3>
-              <p className="text-white/80 text-sm">Minutes Learned</p>
-            </motion.div>
-
-            <motion.div
-              className="bg-gradient-to-r from-warm-orange-600 to-warm-orange-500 p-6 rounded-2xl"
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.4 }}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <FiTrendingUp className="text-white text-2xl" />
-                <span className="text-white/70 text-sm">This Week</span>
-              </div>
-              <h3 className="text-3xl font-bold text-white mb-1">
-                {dashboardData?.stats?.coursesThisWeek || 0}
-              </h3>
-              <p className="text-white/80 text-sm">New Courses</p>
-            </motion.div>
+              Logout
+            </button>
           </div>
-
-          {/* Progress Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            {/* Completion Rate */}
-            <motion.div
-              className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-6"
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.5 }}
+        </div>
+      </header>
+      
+      <main className="max-w-7xl mx-auto py-8 px-4 md:px-8">
+        {/* Generate Course Section */}
+        <section className={`mb-12 p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white shadow-md'}`}>
+          <h2 className="text-2xl font-bold mb-4">Generate a New Course</h2>
+          
+          <form onSubmit={handleGenerateCourse} className="flex flex-col md:flex-row gap-4">
+            <input
+              type="text"
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              placeholder="Enter an engineering topic..."
+              className={`flex-grow p-3 rounded-md outline-none ${
+                isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border border-gray-300'
+              }`}
+            />
+            <button
+              type="submit"
+              disabled={generating}
+              className={`px-6 py-3 rounded-md ${
+                generating 
+                  ? 'bg-green-400 cursor-not-allowed' 
+                  : 'bg-green-600 hover:bg-green-700'
+              } text-white font-medium`}
             >
-              <h3 className="text-xl font-bold text-white mb-6 flex items-center">
-                <FiBarChart2 className="mr-2" />
-                Learning Progress
-              </h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between text-white/80 text-sm mb-2">
-                    <span>Completion Rate</span>
-                    <span>{dashboardData?.stats?.completionRate || 0}%</span>
-                  </div>
-                  <div className="w-full bg-white/20 rounded-full h-2">
-                    <div 
-                      className="bg-gradient-to-r from-forest-400 to-emerald-custom-600 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${dashboardData?.stats?.completionRate || 0}%` }}
-                    ></div>
-                  </div>
+              {generating ? (
+                <div className="flex items-center">
+                  <div className="animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                  Generating...
                 </div>
-
-                <div className="grid grid-cols-2 gap-4 mt-6">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-400">
-                      {dashboardData?.stats?.completedCourses || 0}
-                    </div>
-                    <div className="text-white/60 text-sm">Completed</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-400">
-                      {dashboardData?.stats?.inProgressCourses || 0}
-                    </div>
-                    <div className="text-white/60 text-sm">In Progress</div>
-                  </div>
+              ) : (
+                'Generate Course'
+              )}
+            </button>
+          </form>
+          <p className="mt-2 text-sm text-gray-500">
+            Example topics: "Docker containers", "Neural networks", "Database indexing"
+          </p>
+        </section>
+        
+        {/* Dashboard Stats */}
+        {dashboardData && (
+          <section className="mb-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white shadow-md'}`}>
+              <div className="flex items-center">
+                <div className={`rounded-full p-3 ${isDarkMode ? 'bg-green-900' : 'bg-green-100'}`}>
+                  <FaBookOpen className={isDarkMode ? 'text-green-300' : 'text-green-600'} size={24} />
+                </div>
+                <div className="ml-4">
+                  <h3 className="text-sm font-medium text-gray-500">Total Courses</h3>
+                  <p className="text-2xl font-semibold">{dashboardData.stats.totalCourses}</p>
                 </div>
               </div>
-            </motion.div>
-
-            {/* Achievements */}
-            <motion.div
-              className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-6"
-              initial={{ x: 20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.6 }}
-            >
-              <h3 className="text-xl font-bold text-white mb-6 flex items-center">
-                <FiAward className="mr-2" />
-                Achievements
-              </h3>
-              
-              <div className="space-y-4">
-                {dashboardData?.achievements?.map((achievement, index) => (
-                  <div 
-                    key={index}
-                    className={`flex items-center space-x-3 p-3 rounded-lg ${
-                      achievement.unlocked 
-                        ? 'bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30' 
-                        : 'bg-white/5 border border-white/10'
-                    }`}
-                  >
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      achievement.unlocked ? 'bg-yellow-500' : 'bg-white/20'
-                    }`}>
-                      <FiStar className={achievement.unlocked ? 'text-white' : 'text-white/40'} />
+            </div>
+            
+            <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white shadow-md'}`}>
+              <div className="flex items-center">
+                <div className={`rounded-full p-3 ${isDarkMode ? 'bg-green-900' : 'bg-green-100'}`}>
+                  <FaGraduationCap className={isDarkMode ? 'text-green-300' : 'text-green-600'} size={24} />
+                </div>
+                <div className="ml-4">
+                  <h3 className="text-sm font-medium text-gray-500">Completed</h3>
+                  <p className="text-2xl font-semibold">{dashboardData.stats.completedCourses}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white shadow-md'}`}>
+              <div className="flex items-center">
+                <div className={`rounded-full p-3 ${isDarkMode ? 'bg-emerald-900' : 'bg-emerald-100'}`}>
+                  <FaClock className={isDarkMode ? 'text-emerald-300' : 'text-emerald-600'} size={24} />
+                </div>
+                <div className="ml-4">
+                  <h3 className="text-sm font-medium text-gray-500">Study Time</h3>
+                  <p className="text-2xl font-semibold">{dashboardData.stats.totalStudyTime} min</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white shadow-md'}`}>
+              <div className="flex items-center">
+                <div className={`rounded-full p-3 ${isDarkMode ? 'bg-lime-900' : 'bg-lime-100'}`}>
+                  <FaBrain className={isDarkMode ? 'text-lime-300' : 'text-lime-600'} size={24} />
+                </div>
+                <div className="ml-4">
+                  <h3 className="text-sm font-medium text-gray-500">Completion Rate</h3>
+                  <p className="text-2xl font-semibold">{dashboardData.stats.completionRate}%</p>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+        
+        {/* Recent Courses */}
+        <section className="mb-12">
+          <h2 className="text-2xl font-bold mb-6">Your Courses</h2>
+          
+          {userCourses.length === 0 ? (
+            <div className={`p-8 rounded-lg text-center ${isDarkMode ? 'bg-gray-800' : 'bg-white shadow-md'}`}>
+              <FaRobot size={48} className="mx-auto mb-4 text-gray-400" />
+              <h3 className="text-xl font-semibold mb-2">No courses yet</h3>
+              <p className="mb-4">Generate your first course by entering a topic above</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {userCourses.map((userCourse) => (
+                <div 
+                  key={userCourse.id}
+                  className={`p-6 rounded-lg cursor-pointer transition duration-200 ${
+                    isDarkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-white shadow-md hover:shadow-lg'
+                  }`}
+                  onClick={() => handleCourseClick(userCourse.course)}
+                >
+                  <h3 className="text-xl font-semibold mb-2">{userCourse.course.title}</h3>
+                  <p className="mb-4 line-clamp-2">{userCourse.course.description}</p>
+                  
+                  <div className="flex justify-between items-center mb-4">
+                    <div className="flex items-center">
+                      <FaClock className="mr-2 text-gray-500" />
+                      <span>{userCourse.course.duration || userCourse.course.estimatedReadTime || '20-30 minutes'}</span>
                     </div>
-                    <div className="flex-1">
-                      <h4 className={`font-semibold ${achievement.unlocked ? 'text-yellow-300' : 'text-white/60'}`}>
-                        {achievement.name}
-                      </h4>
-                      <p className="text-white/60 text-sm">{achievement.description}</p>
+                    <div>
+                      {userCourse.completed ? (
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          isDarkMode ? 'bg-green-800 text-green-200' : 'bg-green-100 text-green-800'
+                        }`}>
+                          Completed
+                        </span>
+                      ) : (
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          isDarkMode ? 'bg-emerald-800 text-emerald-200' : 'bg-emerald-100 text-emerald-800'
+                        }`}>
+                          In Progress
+                        </span>
+                      )}
                     </div>
                   </div>
-                ))}
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Recent Activity & Favorite Topics */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Recent Activity */}
-            <motion.div
-              className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-6"
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.7 }}
-            >
-              <h3 className="text-xl font-bold text-white mb-6 flex items-center">
-                <FiCalendar className="mr-2" />
-                Recent Activity
-              </h3>
-              
-              <div className="space-y-3">
-                {dashboardData?.recentActivity?.length > 0 ? (
-                  dashboardData.recentActivity.slice(0, 5).map((course, index) => (
-                    <div key={index} className="flex items-center space-x-3 p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer">
-                      <div className="w-10 h-10 bg-gradient-to-r from-emerald-custom-500 to-forest-500 rounded-lg flex items-center justify-center">
-                        <FiPlay className="text-white" size={14} />
+                  
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500">
+                      Created: {new Date(userCourse.createdAt).toLocaleDateString()}
+                    </span>
+                    <button 
+                      className={`font-medium ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCourseClick(userCourse.course);
+                      }}
+                    >
+                      View
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+        
+        {/* Recent Activity */}
+        {dashboardData && dashboardData.recentActivity && dashboardData.recentActivity.length > 0 && (
+          <section>
+            <h2 className="text-2xl font-bold mb-6">Recent Activity</h2>
+            
+            <div className={`rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white shadow-md'}`}>
+              <ul className="divide-y divide-gray-200">
+                {dashboardData.recentActivity.map((activity, index) => (
+                  <li key={index} className="p-4">
+                    <div className="flex items-start">
+                      <div className={`rounded-full p-2 mt-1 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                        <FaHistory className="text-gray-500" />
                       </div>
-                      <div className="flex-1">
-                        <h4 className="text-white font-medium text-sm truncate">{course.topic}</h4>
-                        <p className="text-white/60 text-xs">
-                          {new Date(course.createdAt).toLocaleDateString()}
+                      <div className="ml-3">
+                        <p className="font-medium">{activity.topic}</p>
+                        <p className="text-sm text-gray-500">
+                          {new Date(activity.createdAt).toLocaleDateString()} at {' '}
+                          {new Date(activity.createdAt).toLocaleTimeString()}
                         </p>
                       </div>
                     </div>
-                  ))
-                ) : (
-                  <p className="text-white/60 text-center py-4">No recent activity</p>
-                )}
-              </div>
-            </motion.div>
-
-            {/* Favorite Topics */}
-            <motion.div
-              className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-6"
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.8 }}
-            >
-              <h3 className="text-xl font-bold text-white mb-6 flex items-center">
-                <FiStar className="mr-2" />
-                Favorite Topics
-              </h3>
-              
-              <div className="space-y-3">
-                {dashboardData?.favoriteTopics?.length > 0 ? (
-                  dashboardData.favoriteTopics.map((item, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-                      <span className="text-white/80 capitalize">{item.topic}</span>
-                      <span className="text-emerald-custom-400 font-semibold">{item.count}</span>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-white/60 text-center py-4">No favorite topics yet</p>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <Footer />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
+        )}
+      </main>
     </div>
   );
 };

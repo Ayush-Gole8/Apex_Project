@@ -12,6 +12,12 @@ const { findRelevantContext, generateContextPrompt, engineeringKnowledgeBase } =
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Ensure JWT secret is set
+if (!process.env.JWT_SECRET) {
+  process.env.JWT_SECRET = 'apex-fallback-secret-key-' + Math.random().toString(36).substring(2);
+  console.log('⚠️ JWT_SECRET not found in environment, using fallback secret');
+}
+
 // Initialize Gemini AI
 let genAI = null;
 if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'your_gemini_api_key_here') {
@@ -499,12 +505,21 @@ CRITICAL REQUIREMENTS:
    - Official documentation sites
 4. COMPREHENSIVE EXPLANATIONS: Each module should have detailed content with proper paragraphs
 5. PRACTICAL FOCUS: Include real-world applications and hands-on examples
+6. ERROR PREVENTION: Ensure all response properties like modules, topics, prerequisites, etc. are properly structured as arrays
+7. CONSISTENCY: Make sure all properties exist and are consistently formatted
 
 For the topic "${topic}", create a course that helps students truly understand:
 - WHY concepts work the way they do (with detailed explanations)
 - HOW to apply them in real scenarios (with step-by-step guidance)
 - WHEN to use different approaches (with decision frameworks)
 - WHAT common mistakes to avoid (with prevention strategies)
+
+IMPORTANT INSTRUCTIONS FOR JSON FORMAT:
+- Ensure EVERY property that should contain multiple items is an ARRAY, even if there's only one item
+- Double-check that modules, topics, keyPoints, resources, commonMistakes, prerequisites, learningObjectives, realWorldApplications, quickReference, assessmentQuestions, and nextSteps are ALL proper arrays
+- NEVER return properties as strings when they should be arrays
+- ALL array properties must use square brackets [ ] even for single items
+- Format your JSON correctly with no errors
 
 Create the course in this EXACT JSON format:
 {
@@ -610,11 +625,67 @@ IMPORTANT:
     courseData = courseData.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     
     try {
+      // If JSON starts with '{' and ends with '}', we're good, otherwise try to extract JSON
+      if (!courseData.startsWith('{') || !courseData.endsWith('}')) {
+        console.log('Response does not look like valid JSON, attempting to extract...');
+        // Try to find JSON object in the text (between { and })
+        const jsonMatch = courseData.match(/{[\s\S]*}/);
+        if (jsonMatch) {
+          courseData = jsonMatch[0];
+          console.log('Extracted JSON object from response');
+        } else {
+          throw new Error('Could not extract valid JSON from response');
+        }
+      }
+      
       const parsedCourse = JSON.parse(courseData);
       
       // Validate the course structure
-      if (!parsedCourse.title || !parsedCourse.modules || parsedCourse.modules.length === 0) {
+      if (!parsedCourse.title || !parsedCourse.modules) {
         throw new Error('Invalid course structure received from AI');
+      }
+      
+      // Ensure all properties that should be arrays are actually arrays
+      if (parsedCourse.modules && !Array.isArray(parsedCourse.modules)) {
+        parsedCourse.modules = [parsedCourse.modules];
+      }
+      
+      // Ensure each module has proper array properties
+      if (Array.isArray(parsedCourse.modules)) {
+        parsedCourse.modules.forEach(module => {
+          if (module.topics && !Array.isArray(module.topics)) {
+            module.topics = [module.topics];
+          }
+          if (module.keyPoints && !Array.isArray(module.keyPoints)) {
+            module.keyPoints = [module.keyPoints];
+          }
+          if (module.resources && !Array.isArray(module.resources)) {
+            module.resources = [module.resources];
+          }
+          if (module.commonMistakes && !Array.isArray(module.commonMistakes)) {
+            module.commonMistakes = [module.commonMistakes];
+          }
+        });
+      }
+      
+      // Ensure other array properties are arrays
+      if (parsedCourse.prerequisites && !Array.isArray(parsedCourse.prerequisites)) {
+        parsedCourse.prerequisites = [parsedCourse.prerequisites];
+      }
+      if (parsedCourse.learningObjectives && !Array.isArray(parsedCourse.learningObjectives)) {
+        parsedCourse.learningObjectives = [parsedCourse.learningObjectives];
+      }
+      if (parsedCourse.realWorldApplications && !Array.isArray(parsedCourse.realWorldApplications)) {
+        parsedCourse.realWorldApplications = [parsedCourse.realWorldApplications];
+      }
+      if (parsedCourse.quickReference && !Array.isArray(parsedCourse.quickReference)) {
+        parsedCourse.quickReference = [parsedCourse.quickReference];
+      }
+      if (parsedCourse.assessmentQuestions && !Array.isArray(parsedCourse.assessmentQuestions)) {
+        parsedCourse.assessmentQuestions = [parsedCourse.assessmentQuestions];
+      }
+      if (parsedCourse.nextSteps && !Array.isArray(parsedCourse.nextSteps)) {
+        parsedCourse.nextSteps = [parsedCourse.nextSteps];
       }
       
       // Add metadata and save course
@@ -717,7 +788,11 @@ IMPORTANT:
               description: "Comprehensive overview and technical details"
             }
           ],
-          practiceExercise: `Think of three real-world scenarios where ${topic} concepts would be applied`
+          practiceExercise: `Think of three real-world scenarios where ${topic} concepts would be applied`,
+          commonMistakes: [
+            `Misunderstanding the core concepts of ${topic}`,
+            "Applying the wrong approach to problem-solving"
+          ]
         },
         {
           title: `Practical Applications of ${topic}`,
@@ -737,7 +812,11 @@ IMPORTANT:
               description: "Step-by-step problem solving techniques"
             }
           ],
-          practiceExercise: `Analyze a simple problem related to ${topic} and outline a solution approach`
+          practiceExercise: `Analyze a simple problem related to ${topic} and outline a solution approach`,
+          commonMistakes: [
+            "Not considering all variables in problem-solving",
+            "Overlooking critical constraints and requirements"
+          ]
         }
       ],
       prerequisites: ["Basic engineering knowledge", "Mathematical fundamentals"],
@@ -746,10 +825,20 @@ IMPORTANT:
         `Apply ${topic} principles to solve problems`,
         `Identify practical applications in engineering`
       ],
+      realWorldApplications: [
+        `Using ${topic} in modern engineering systems`,
+        `How ${topic} is applied in industry solutions`,
+        `Future trends and innovations in ${topic}`
+      ],
       quickReference: [
         `Key formula/principle related to ${topic}`,
         "Important definitions and terminology",
         "Common problem-solving approaches"
+      ],
+      assessmentQuestions: [
+        `What are the primary components of ${topic} and how do they interact?`,
+        `How would you apply ${topic} concepts to solve a real-world engineering problem?`,
+        `What are the limitations of current approaches to ${topic} and how might they be improved?`
       ],
       nextSteps: [
         `Study advanced ${topic} concepts`,

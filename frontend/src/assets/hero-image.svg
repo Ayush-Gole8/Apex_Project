@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800px" height="600px" viewBox="0 0 800 600" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Hero Image</title>
+    <defs>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-1">
+            <stop stop-color="#4F46E5" offset="0%"></stop>
+            <stop stop-color="#7C3AED" offset="100%"></stop>
+        </linearGradient>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-2">
+            <stop stop-color="#3B82F6" offset="0%"></stop>
+            <stop stop-color="#2563EB" offset="100%"></stop>
+        </linearGradient>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-3">
+            <stop stop-color="#8B5CF6" offset="0%"></stop>
+            <stop stop-color="#6D28D9" offset="100%"></stop>
+        </linearGradient>
+    </defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Hero-Illustration">
+            <!-- Background Elements -->
+            <circle id="Circle-1" fill="#EFF6FF" cx="400" cy="300" r="200"></circle>
+            <circle id="Circle-2" fill="#DBEAFE" cx="600" cy="150" r="50"></circle>
+            <circle id="Circle-3" fill="#DBEAFE" cx="200" cy="450" r="60"></circle>
+            
+            <!-- Learning Platform -->
+            <rect id="Platform" fill="#F9FAFB" x="250" y="300" width="300" height="200" rx="10"></rect>
+            <rect id="Screen" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="2" x="270" y="320" width="260" height="160" rx="5"></rect>
+            
+            <!-- Screen Content -->
+            <rect id="Header" fill="#3B82F6" x="270" y="320" width="260" height="40" rx="5"></rect>
+            <circle id="Profile" fill="#FFFFFF" cx="300" cy="340" r="10"></circle>
+            <rect id="Nav-1" fill="#FFFFFF" x="330" y="335" width="40" height="10" rx="5"></rect>
+            <rect id="Nav-2" fill="#FFFFFF" x="380" y="335" width="40" height="10" rx="5"></rect>
+            <rect id="Nav-3" fill="#FFFFFF" x="430" y="335" width="40" height="10" rx="5"></rect>
+            
+            <!-- Content Blocks -->
+            <rect id="Block-1" fill="#F3F4F6" x="280" y="370" width="240" height="30" rx="5"></rect>
+            <rect id="Block-2" fill="#F3F4F6" x="280" y="410" width="240" height="30" rx="5"></rect>
+            <rect id="Block-3" fill="#F3F4F6" x="280" y="450" width="120" height="20" rx="5"></rect>
+            
+            <!-- Brain with Neural Network -->
+            <circle id="Brain" fill="url(#linearGradient-1)" cx="400" cy="180" r="80"></circle>
+            <path d="M350,160 C390,130 410,130 450,160" id="Neural-Path-1" stroke="#FFFFFF" stroke-width="2"></path>
+            <path d="M350,180 C390,210 410,210 450,180" id="Neural-Path-2" stroke="#FFFFFF" stroke-width="2"></path>
+            <path d="M380,130 C380,170 380,190 380,230" id="Neural-Path-3" stroke="#FFFFFF" stroke-width="2"></path>
+            <path d="M420,130 C420,170 420,190 420,230" id="Neural-Path-4" stroke="#FFFFFF" stroke-width="2"></path>
+            
+            <!-- Neural Nodes -->
+            <circle id="Node-1" fill="#FFFFFF" cx="350" cy="160" r="5"></circle>
+            <circle id="Node-2" fill="#FFFFFF" cx="450" cy="160" r="5"></circle>
+            <circle id="Node-3" fill="#FFFFFF" cx="350" cy="180" r="5"></circle>
+            <circle id="Node-4" fill="#FFFFFF" cx="450" cy="180" r="5"></circle>
+            <circle id="Node-5" fill="#FFFFFF" cx="380" cy="130" r="5"></circle>
+            <circle id="Node-6" fill="#FFFFFF" cx="380" cy="230" r="5"></circle>
+            <circle id="Node-7" fill="#FFFFFF" cx="420" cy="130" r="5"></circle>
+            <circle id="Node-8" fill="#FFFFFF" cx="420" cy="230" r="5"></circle>
+            
+            <!-- Floating Elements -->
+            <circle id="Floating-1" fill="url(#linearGradient-2)" cx="180" cy="200" r="30"></circle>
+            <circle id="Floating-2" fill="url(#linearGradient-3)" cx="600" cy="380" r="40"></circle>
+            <rect id="Floating-3" fill="#3B82F6" x="150" cy="320" width="60" height="60" rx="10" transform="rotate(15, 180, 350)"></rect>
+            <rect id="Floating-4" fill="#8B5CF6" x="580" cy="220" width="50" height="50" rx="10" transform="rotate(-10, 605, 245)"></rect>
+            
+            <!-- Small Decorative Elements -->
+            <circle id="Dot-1" fill="#3B82F6" cx="300" cy="120" r="5"></circle>
+            <circle id="Dot-2" fill="#8B5CF6" cx="320" cy="140" r="3"></circle>
+            <circle id="Dot-3" fill="#3B82F6" cx="500" cy="130" r="4"></circle>
+            <circle id="Dot-4" fill="#8B5CF6" cx="480" cy="110" r="6"></circle>
+            <circle id="Dot-5" fill="#3B82F6" cx="250" cy="220" r="4"></circle>
+            <circle id="Dot-6" fill="#8B5CF6" cx="550" cy="210" r="5"></circle>
+            <circle id="Dot-7" fill="#3B82F6" cx="520" cy="250" r="3"></circle>
+        </g>
+    </g>
+</svg>

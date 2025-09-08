@@ -1,425 +1,390 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { useInView } from 'react-intersection-observer';
-import { gsap } from 'gsap';
-import { FiUser, FiMessageCircle, FiSend, FiBook, FiClock, FiUsers, FiStar, FiLogOut, FiBarChart2, FiArrowRight } from 'react-icons/fi';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import toast from 'react-hot-toast';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
-import AuthModal from './AuthModal';
-import Footer from './Footer';
-import API_BASE_URL from '../config/api';
+import { useTheme } from '../contexts/ThemeContext';
+import { motion } from 'framer-motion';
+import { FaRocket, FaLightbulb, FaGraduationCap, FaClock } from 'react-icons/fa';
+import LoginModal from './auth/LoginModal';
+import RegisterModal from './auth/RegisterModal';
+import CourseCard from './CourseCard';
+import GeneratedCourse from './GeneratedCourse';
+import { apiUtils } from '../utils/api';
+import heroImage from '../assets/hero-image.svg';
 
 const Landing = () => {
-  const [courses, setCourses] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [chatInput, setChatInput] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [showChat, setShowChat] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
+  const { isDarkMode } = useTheme();
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   
-  const { user, logout, isAuthenticated } = useAuth();
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [courses, setCourses] = useState([]);
+  const [coursesLoading, setCoursesLoading] = useState(true);
+  const [topic, setTopic] = useState('');
+  const [generating, setGenerating] = useState(false);
+  const [generatedCourse, setGeneratedCourse] = useState(null);
+  const [errorMessage, setErrorMessage] = useState('');
   
-  const heroRef = useRef();
-  const coursesRef = useRef();
-  
-  const [ref, inView] = useInView({
-    threshold: 0.1,
-    triggerOnce: true
-  });
-
   useEffect(() => {
     fetchCourses();
-    initAnimations();
   }, []);
-
+  
   const fetchCourses = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/courses`);
-      setCourses(response.data);
-      setLoading(false);
+      setCoursesLoading(true);
+      const response = await apiUtils.getCourses();
+      if (response.ok) {
+        const data = await response.json();
+        // Support both array and { courses: [] }
+        const list = Array.isArray(data) ? data : (data.courses || []);
+        setCourses(list);
+      } else {
+        setCourses([]);
+      }
     } catch (error) {
       console.error('Error fetching courses:', error);
-      setLoading(false);
-      toast.error('Failed to load courses');
+      setCourses([]);
+    } finally {
+      setCoursesLoading(false);
     }
   };
-
-  const initAnimations = () => {
-    // Hero section animation
-    gsap.fromTo(heroRef.current.children, 
-      { y: 100, opacity: 0 },
-      { y: 0, opacity: 1, duration: 1, stagger: 0.2, delay: 0.5 }
-    );
-
-    // Floating animation for hero elements
-    gsap.to(".float-element", {
-      y: -20,
-      duration: 2,
-      repeat: -1,
-      yoyo: true,
-      ease: "power2.inOut",
-      stagger: 0.3
-    });
-  };
-
-  const handleCourseClick = (courseId) => {
-    navigate(`/course/${courseId}`);
-  };
-
+  
+  const handleLogin = () => setShowLoginModal(true);
+  const handleRegister = () => setShowRegisterModal(true);
+  const closeModals = () => { setShowLoginModal(false); setShowRegisterModal(false); };
+  const handleTopicChange = (e) => setTopic(e.target.value);
+  
   const handleChatSubmit = async (e) => {
     e.preventDefault();
-    if (!chatInput.trim()) return;
-
-    if (!isAuthenticated) {
-      toast.error('Please sign in to generate courses');
-      setShowAuthModal(true);
-      return;
-    }
-
-    console.log('Submitting chat request for topic:', chatInput);
-    setIsGenerating(true);
+    if (!topic.trim()) { toast.error('Please enter a topic'); return; }
+    setGenerating(true);
+    setErrorMessage('');
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post(`${API_BASE_URL}/api/generate-course`, {
-        topic: chatInput
-      }, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      console.log('Course generation successful:', response.data);
-      navigate('/generated-course', { 
-        state: { 
-          courseData: response.data, 
-          topic: chatInput 
-        } 
-      });
+      if (!token && !isAuthenticated) {
+        toast.error('Please log in to generate a course');
+        setShowLoginModal(true);
+        setGenerating(false);
+        return;
+      }
+      const response = await apiUtils.generateCourse(topic);
+      const data = await response.json();
+      if (response.ok) {
+        // Support both {course} and direct course object
+        setGeneratedCourse(data.course || data);
+        toast.success('Course generated successfully!');
+      } else {
+        setErrorMessage(data.message || 'Failed to generate course. Please try again later.');
+        toast.error('Failed to generate course');
+      }
     } catch (error) {
       console.error('Error generating course:', error);
-      console.error('Error response:', error.response?.data);
-      console.error('Error status:', error.response?.status);
-      console.error('Full error object:', {
-        message: error.message,
-        status: error.response?.status,
-        data: error.response?.data,
-        url: error.config?.url,
-        code: error.code
-      });
-      
-      let errorMessage = 'Failed to generate course';
-      
-      if (error.code === 'ERR_NETWORK' || error.message.includes('Network Error')) {
-        errorMessage = 'Cannot connect to server. Please check if the backend is running.';
-      } else if (error.response?.status === 401) {
-        errorMessage = 'Authentication failed. Please sign in again.';
-        setShowAuthModal(true);
-      } else if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.response?.data?.instructions) {
-        errorMessage = error.response.data.instructions;
-      }
-      
-      toast.error(errorMessage);
+      setErrorMessage('Failed to generate course. Please try again later.');
+      toast.error('Failed to generate course');
     } finally {
-      setIsGenerating(false);
-      setChatInput('');
+      setGenerating(false);
     }
   };
-
+  
+  const handleBackToHome = () => { setGeneratedCourse(null); setTopic(''); };
+  
+  if (generatedCourse) {
+    return (
+      <GeneratedCourse 
+        course={generatedCourse} 
+        onBack={handleBackToHome}
+      />
+    );
+  }
+  
   return (
-    <div className="min-h-screen bg-professional relative overflow-hidden">
-      {/* Animated Background - More Subtle */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none opacity-30">
-        <motion.div 
-          className="absolute -top-40 -right-40 w-80 h-80 bg-emerald-custom-500 rounded-full mix-blend-multiply filter blur-xl"
-          animate={{ 
-            scale: [1, 1.2, 1],
-            opacity: [0.1, 0.2, 0.1]
-          }}
-          transition={{ 
-            duration: 8,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        />
-        <motion.div 
-          className="absolute -bottom-40 -left-40 w-80 h-80 bg-forest-500 rounded-full mix-blend-multiply filter blur-xl"
-          animate={{ 
-            scale: [1.2, 1, 1.2],
-            opacity: [0.2, 0.1, 0.2]
-          }}
-          transition={{ 
-            duration: 10,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 2
-          }}
-        />
-        <motion.div 
-          className="absolute top-40 left-1/2 w-80 h-80 bg-emerald-custom-600 rounded-full mix-blend-multiply filter blur-xl"
-          animate={{ 
-            scale: [1, 1.3, 1],
-            opacity: [0.15, 0.25, 0.15]
-          }}
-          transition={{ 
-            duration: 12,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 4
-          }}
-        />
-      </div>
-
-      {/* Navbar */}
-      <nav className="relative z-50 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <motion.div 
-            className="flex items-center space-x-3"
-            initial={{ x: -50, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="w-12 h-12 bg-gradient-to-r from-emerald-custom-500 to-forest-500 rounded-xl flex items-center justify-center shadow-lg">
-              <span className="text-white font-black text-2xl tracking-tight">A</span>
-            </div>
-            <span className="logo-text text-white">APE<span className="text-emerald-custom-400">X</span></span>
-          </motion.div>
-          
-          <motion.div 
-            className="flex items-center space-x-4"
-            initial={{ x: 50, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ duration: 0.5 }}
-          >
-            {isAuthenticated ? (
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={() => navigate('/dashboard')}
-                  className="nav-item flex items-center space-x-2 bg-white/10 backdrop-blur-lg rounded-full px-4 py-2 border border-white/20 hover:bg-white/20 transition-colors"
-                >
-                  <FiBarChart2 className="text-emerald-custom-500" />
-                  <span className="text-sm text-white font-medium">Dashboard</span>
-                </button>
-                
-                <button
-                  onClick={() => navigate('/my-courses')}
-                  className="nav-item flex items-center space-x-2 bg-white/10 backdrop-blur-lg rounded-full px-4 py-2 border border-white/20 hover:bg-white/20 transition-colors"
-                >
-                  <FiBook className="text-forest-500" />
-                  <span className="text-sm text-white font-medium">My Courses</span>
-                </button>
-                
-                <div className="nav-item flex items-center space-x-3 bg-white/10 backdrop-blur-lg rounded-full px-4 py-2 border border-white/20">
-                  <FiUser className="text-emerald-custom-500" />
-                  <span className="text-sm text-white font-medium">{user?.name || 'Student'}</span>
-                </div>
-                
-                <button
-                  onClick={logout}
-                  className="flex items-center justify-center w-10 h-10 bg-red-500/20 backdrop-blur-lg rounded-full border border-red-500/20 hover:bg-red-500/30 transition-colors"
-                >
-                  <FiLogOut className="text-red-400" size={16} />
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setShowAuthModal(true)}
-                className="flex items-center space-x-3 bg-gradient-to-r from-emerald-custom-500 to-forest-500 rounded-full px-6 py-2 text-white font-medium hover:shadow-lg hover:shadow-emerald-custom-500/25 transition-all duration-300"
-              >
-                <FiUser />
-                <span>Sign In</span>
-              </button>
-            )}
-          </motion.div>
-        </div>
-      </nav>
-
+    <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-800'}`}>
       {/* Hero Section */}
-      <section ref={heroRef} className="relative z-10 px-6 py-20">
-        <div className="max-w-7xl mx-auto text-center">
-          <h1 className="text-6xl md:text-8xl font-bold mb-6 float-element text-crisp">
-            <span className="gradient-text">AI-Powered</span>
-            <br />
-            <span className="text-white text-enhanced">Learning</span>
-          </h1>
-          <p className="text-xl text-gray-200 mb-8 max-w-3xl mx-auto float-element leading-relaxed">
-            Discover personalized courses tailored to your learning journey. 
-            Get instant AI-generated content on any engineering topic.
-          </p>
-          <motion.button
-            className="bg-gradient-to-r from-emerald-custom-500 to-forest-500 text-white px-8 py-4 rounded-full text-lg font-semibold hover:shadow-lg hover:shadow-emerald-custom-500/25 transition-all duration-300 float-element"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setShowChat(true)}
-          >
-            Start Learning Now
-          </motion.button>
+      <section className={`py-20 px-4 md:px-8 lg:px-16 ${isDarkMode ? 'bg-gray-800' : 'bg-green-50'}`}>
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center">
+          <div className="lg:w-1/2 mb-12 lg:mb-0">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <h1 className={`text-4xl md:text-5xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                Master Complex Engineering Topics in <span className="text-green-600">Minutes</span>
+              </h1>
+              <p className="text-xl mb-8">
+                AI-powered microlearning courses designed for busy engineers.
+                Understand key concepts quickly and effectively.
+              </p>
+              
+              <div className="space-y-4 max-w-md">
+                <form onSubmit={handleChatSubmit} className="flex flex-col space-y-3">
+                  <div className={`flex rounded-lg overflow-hidden shadow-lg ${isDarkMode ? 'bg-gray-700' : 'bg-white'}`}>
+                    <input
+                      type="text"
+                      value={topic}
+                      onChange={handleTopicChange}
+                      placeholder="Enter an engineering topic..."
+                      className={`flex-grow p-4 outline-none ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-white text-gray-900'}`}
+                    />
+                    <button
+                      type="submit"
+                      disabled={generating}
+                      className={`px-6 py-4 bg-green-600 text-white font-medium flex items-center ${
+                        generating ? 'opacity-70 cursor-not-allowed' : 'hover:bg-green-700'
+                      }`}
+                    >
+                      {generating ? (
+                        <>
+                          <div className="animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <FaRocket className="mr-2" /> Generate Course
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  
+                  {errorMessage && (
+                    <div className="p-3 bg-red-100 text-red-700 rounded-md">
+                      {errorMessage}
+                    </div>
+                  )}
+                  
+                  <p className="text-sm text-gray-500">
+                    Example topics: "Binary search trees", "React hooks", "Kubernetes architecture"
+                  </p>
+                </form>
+                
+                {!isAuthenticated && (
+                  <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 mt-6">
+                    <button
+                      onClick={handleLogin}
+                      className={`px-6 py-3 rounded-md ${
+                        isDarkMode 
+                          ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                      }`}
+                    >
+                      Sign In
+                    </button>
+                    <button
+                      onClick={handleRegister}
+                      className={`px-6 py-3 rounded-md ${
+                        isDarkMode 
+                          ? 'bg-gray-700 text-white hover:bg-gray-600' 
+                          : 'bg-white text-blue-600 border border-blue-600 hover:bg-blue-50'
+                      }`}
+                    >
+                      Create Account
+                    </button>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+          <div className="lg:w-1/2 lg:pl-16">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+            >
+              <img
+                src={heroImage}
+                alt="AI Learning Illustration"
+                className="w-full max-w-md mx-auto"
+              />
+            </motion.div>
+          </div>
         </div>
       </section>
-
-      {/* Featured Courses */}
-      <section ref={coursesRef} className="relative z-10 px-6 py-20">
+      
+      {/* Features Section */}
+      <section className="py-16 px-4 md:px-8">
         <div className="max-w-7xl mx-auto">
-          <motion.h2 
-            className="text-4xl font-bold text-center mb-16 gradient-text"
-            initial={{ y: 50, opacity: 0 }}
-            whileInView={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.6 }}
-          >
-            Featured Engineering Courses
-          </motion.h2>
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold mb-4">Why Engineers Love ApeX</h2>
+            <p className="text-xl max-w-3xl mx-auto">
+              Designed specifically for engineering professionals who need to learn quickly
+              and effectively.
+            </p>
+          </div>
           
-          {loading ? (
-            <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-emerald-custom-500"></div>
+          <div className="grid md:grid-cols-3 gap-8">
+            <motion.div
+              whileHover={{ y: -5 }}
+              className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white shadow-md'}`}
+            >
+              <div className={`rounded-full w-12 h-12 flex items-center justify-center mb-4 ${
+                isDarkMode ? 'bg-blue-500' : 'bg-blue-100'
+              }`}>
+                <FaClock className={isDarkMode ? 'text-white' : 'text-blue-600'} size={20} />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Quick Learning</h3>
+              <p>
+                Courses designed to be completed in 15-30 minutes, perfect for busy professionals.
+              </p>
+            </motion.div>
+            
+            <motion.div
+              whileHover={{ y: -5 }}
+              className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white shadow-md'}`}
+            >
+              <div className={`rounded-full w-12 h-12 flex items-center justify-center mb-4 ${
+                isDarkMode ? 'bg-green-500' : 'bg-green-100'
+              }`}>
+                <FaLightbulb className={isDarkMode ? 'text-white' : 'text-green-600'} size={20} />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">AI-Powered Content</h3>
+              <p>
+                Courses generated by advanced AI, tailored to your specific learning needs.
+              </p>
+            </motion.div>
+            
+            <motion.div
+              whileHover={{ y: -5 }}
+              className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white shadow-md'}`}
+            >
+              <div className={`rounded-full w-12 h-12 flex items-center justify-center mb-4 ${
+                isDarkMode ? 'bg-purple-500' : 'bg-purple-100'
+              }`}>
+                <FaGraduationCap className={isDarkMode ? 'text-white' : 'text-purple-600'} size={20} />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Engineering Focus</h3>
+              <p>
+                Content designed specifically for engineers with practical examples and applications.
+              </p>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+      
+      {/* Featured Courses */}
+      <section className={`py-16 px-4 md:px-8 ${isDarkMode ? 'bg-gray-800' : 'bg-green-50'}`}>
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-3xl font-bold">Featured Courses</h2>
+            <Link 
+              to="/courses" 
+              className={`px-4 py-2 rounded-md ${
+                isDarkMode 
+                  ? 'bg-green-600 text-white hover:bg-green-700' 
+                  : 'bg-green-600 text-white hover:bg-green-700'
+              }`}
+            >
+              View All Courses
+            </Link>
+          </div>
+          
+          {coursesLoading ? (
+            <div className="flex justify-center items-center py-16">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" ref={ref}>
-              {courses.map((course, index) => (
-                <motion.div
-                  key={course.id}
-                  className="module-card p-6 cursor-pointer group"
-                  initial={{ y: 50, opacity: 0 }}
-                  animate={inView ? { y: 0, opacity: 1 } : { y: 50, opacity: 0 }}
-                  transition={{ 
-                    duration: 0.6, 
-                    delay: index * 0.1,
-                    ease: [0.25, 0.46, 0.45, 0.94]
-                  }}
-                  onClick={() => handleCourseClick(course.id)}
-                  whileHover={{ 
-                    y: -8, 
-                    scale: 1.02,
-                    transition: { duration: 0.3, ease: "easeOut" }
-                  }}
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="w-12 h-12 bg-gradient-to-r from-emerald-custom-500 to-forest-500 rounded-xl flex items-center justify-center">
-                      <FiBook className="text-white text-xl" />
-                    </div>
-                    <span className="bg-white/15 text-white text-xs px-3 py-1 rounded-full font-medium">
-                      {course.difficulty}
-                    </span>
-                  </div>
-                  
-                  <h3 className="text-xl font-bold text-white mb-3 group-hover:text-emerald-custom-300 transition-colors">
-                    {course.title}
-                  </h3>
-                  
-                  <p className="text-white/80 mb-4 text-sm leading-relaxed">
-                    {course.description}
-                  </p>
-                  
-                  <div className="flex items-center justify-between text-white/70 text-sm mb-4">
-                    <div className="flex items-center space-x-1">
-                      <FiClock size={14} />
-                      <span>{course.duration}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <FiUsers size={14} />
-                      <span>{Math.floor(Math.random() * 1000) + 500}+</span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-1 text-yellow-400">
-                      <FiStar size={14} />
-                      <span className="text-sm font-medium">4.{Math.floor(Math.random() * 3) + 7}</span>
-                    </div>
-                    <div className="flex items-center space-x-1 text-emerald-custom-400">
-                      <span className="text-sm font-medium">{course.topics.length} modules</span>
-                      <FiArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                </motion.div>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {courses.slice(0, 6).map((course) => (
+                <CourseCard key={course.id} course={course} />
               ))}
             </div>
           )}
         </div>
       </section>
-
-      {/* Chat Interface */}
-      <motion.div
-        className={`fixed bottom-6 right-6 z-50 ${showChat ? 'w-96' : 'w-auto'}`}
-        initial={false}
-        animate={{ 
-          width: showChat ? 384 : 'auto',
-          height: showChat ? 400 : 60 
-        }}
-        transition={{ duration: 0.3 }}
-      >
-        {!showChat ? (
-          <motion.button
-            className="bg-gradient-to-r from-emerald-custom-500 to-forest-500 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
-            onClick={() => setShowChat(true)}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-          >
-            <FiMessageCircle size={24} />
-          </motion.button>
-        ) : (
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 h-full flex flex-col">
-            <div className="p-4 border-b border-white/20 flex items-center justify-between">
-              <h3 className="text-white font-semibold">AI Course Generator</h3>
-              <button 
-                onClick={() => setShowChat(false)}
-                className="text-white/60 hover:text-white transition-colors"
-              >
-                ✕
-              </button>
-            </div>
-            
-            <div className="flex-1 p-4 flex flex-col justify-center">
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-gradient-to-r from-emerald-custom-500 to-forest-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <FiBook className="text-white text-2xl" />
-                </div>
-                <p className="text-white/90 text-sm leading-relaxed">
-                  Ask me to create a course on any engineering topic!
-                </p>
-              </div>
-            </div>
-            
-            <form onSubmit={handleChatSubmit} className="p-4 border-t border-white/20">
-              <div className="flex space-x-2">
-                <input
-                  type="text"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  placeholder="e.g., Machine Learning for Beginners"
-                  className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:border-emerald-custom-500 text-sm"
-                  disabled={isGenerating}
-                />
-                <button
-                  type="submit"
-                  disabled={isGenerating || !chatInput.trim()}
-                  className="bg-gradient-to-r from-emerald-custom-500 to-forest-500 text-white p-2 rounded-lg hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isGenerating ? (
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  ) : (
-                    <FiSend size={16} />
-                  )}
-                </button>
-              </div>
-            </form>
+      
+      {/* How It Works */}
+      <section className="py-16 px-4 md:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold mb-4">How ApeX Works</h2>
+            <p className="text-xl max-w-3xl mx-auto">
+              Generate customized engineering courses in seconds with our AI-powered platform.
+            </p>
           </div>
-        )}
-      </motion.div>
-
-      {/* Auth Modal */}
-      <AuthModal 
-        isOpen={showAuthModal} 
-        onClose={() => setShowAuthModal(false)} 
-      />
-
-      {/* Footer */}
-      <Footer />
+          
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className={`rounded-full w-16 h-16 flex items-center justify-center mb-4 mx-auto ${
+                isDarkMode ? 'bg-blue-600' : 'bg-blue-100'
+              }`}>
+                <span className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-blue-600'}`}>1</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Enter a Topic</h3>
+              <p>
+                Type any engineering topic you want to learn about.
+              </p>
+            </div>
+            
+            <div className="text-center">
+              <div className={`rounded-full w-16 h-16 flex items-center justify-center mb-4 mx-auto ${
+                isDarkMode ? 'bg-blue-600' : 'bg-blue-100'
+              }`}>
+                <span className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-blue-600'}`}>2</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-2">AI Generates Course</h3>
+              <p>
+                Our AI creates a tailored course with key concepts, examples, and resources.
+              </p>
+            </div>
+            
+            <div className="text-center">
+              <div className={`rounded-full w-16 h-16 flex items-center justify-center mb-4 mx-auto ${
+                isDarkMode ? 'bg-blue-600' : 'bg-blue-100'
+              }`}>
+                <span className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-blue-600'}`}>3</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Learn & Apply</h3>
+              <p>
+                Study the material at your own pace and apply your new knowledge immediately.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      {/* CTA Section */}
+      <section className={`py-16 px-4 md:px-8 ${isDarkMode ? 'bg-gray-800' : 'bg-green-600 text-white'}`}>
+        <div className="max-w-7xl mx-auto text-center">
+          <h2 className={`text-3xl font-bold mb-4 ${!isDarkMode && 'text-white'}`}>
+            Ready to Accelerate Your Engineering Learning?
+          </h2>
+          <p className={`text-xl max-w-3xl mx-auto mb-8 ${!isDarkMode && 'text-blue-100'}`}>
+            Join thousands of engineers who are learning faster and more effectively with ApeX.
+          </p>
+          
+          <button
+            onClick={isAuthenticated ? () => window.scrollTo(0, 0) : handleRegister}
+            className={`px-8 py-3 rounded-md text-lg font-medium ${
+              isDarkMode 
+                ? 'bg-green-600 text-white hover:bg-green-700' 
+                : 'bg-white text-green-600 hover:bg-green-50'
+            }`}
+          >
+            {isAuthenticated ? 'Generate a Course Now' : 'Create Free Account'}
+          </button>
+        </div>
+      </section>
+      
+      {/* Login/Register Modals */}
+      {showLoginModal && (
+        <LoginModal 
+          onClose={closeModals} 
+          onRegisterClick={() => {
+            setShowLoginModal(false);
+            setShowRegisterModal(true);
+          }}
+        />
+      )}
+      
+      {showRegisterModal && (
+        <RegisterModal 
+          onClose={closeModals} 
+          onLoginClick={() => {
+            setShowRegisterModal(false);
+            setShowLoginModal(true);
+          }}
+        />
+      )}
     </div>
   );
 };

@@ -1,74 +1,46 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 
+// Create the context
 const ThemeContext = createContext();
 
+// Custom hook to use the theme
 export const useTheme = () => {
   const context = useContext(ThemeContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useTheme must be used within a ThemeProvider');
   }
   return context;
 };
 
+// Provider component
 export const ThemeProvider = ({ children }) => {
-  const [isDark, setIsDark] = useState(true); // Default to dark mode
-
-  useEffect(() => {
-    // Check for saved theme preference or default to dark
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-      setIsDark(savedTheme === 'dark');
-    } else {
-      // Check system preference
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      setIsDark(prefersDark);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    // Check localStorage first, then system preference
+    const saved = localStorage.getItem('darkMode');
+    if (saved !== null) {
+      return saved === 'true';
     }
-  }, []);
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
 
+  // Update localStorage when theme changes
   useEffect(() => {
-    // Save theme preference and apply to document
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    document.documentElement.classList.toggle('dark', isDark);
-    document.documentElement.classList.toggle('light', !isDark);
-  }, [isDark]);
+    localStorage.setItem('darkMode', isDarkMode.toString());
+    document.body.classList.toggle('dark', isDarkMode);
+  }, [isDarkMode]);
 
-  const toggleTheme = () => {
-    setIsDark(!isDark);
+  // Toggle theme function
+  const toggleDarkMode = () => {
+    setIsDarkMode((prevMode) => !prevMode);
   };
 
-  const theme = {
-    isDark,
-    toggleTheme,
-    colors: {
-      // Dark theme colors
-      dark: {
-        primary: 'from-dark-forest-800 via-dark-forest-700 to-dark-forest-800',
-        secondary: 'from-emerald-custom-600 to-forest-700',
-        text: 'text-white',
-        textSecondary: 'text-white/90',
-        textTertiary: 'text-white/70',
-        background: 'bg-white/12',
-        border: 'border-white/25',
-        card: 'bg-white/12 backdrop-blur-lg border-white/25'
-      },
-      // Light theme colors
-      light: {
-        primary: 'from-gray-50 via-white to-gray-100',
-        secondary: 'from-emerald-500 to-forest-600',
-        text: 'text-gray-900',
-        textSecondary: 'text-gray-800',
-        textTertiary: 'text-gray-600',
-        background: 'bg-white/90',
-        border: 'border-gray-200',
-        card: 'bg-white/90 backdrop-blur-lg border-gray-200'
-      }
-    }
+  const value = {
+    isDarkMode,
+    toggleDarkMode,
   };
-
-  const currentTheme = isDark ? theme.colors.dark : theme.colors.light;
 
   return (
-    <ThemeContext.Provider value={{ ...theme, current: currentTheme }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );

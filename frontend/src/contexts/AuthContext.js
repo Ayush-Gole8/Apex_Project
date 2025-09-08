@@ -1,12 +1,14 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
-import API_BASE_URL from '../config/api';
+import React, { createContext, useState, useEffect, useContext } from 'react';
+import { toast } from 'react-hot-toast';
+import { apiUtils } from '../utils/api';
 
+// Create context
 const AuthContext = createContext();
 
+// Custom hook to use the auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
@@ -14,100 +16,114 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      // Verify token and get user data
-      setIsAuthenticated(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    const fetchUser = async () => {
+    // Check if user is logged in on mount
+    const checkAuthStatus = async () => {
       const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          const response = await axios.get(`${API_BASE_URL}/api/auth/me`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          setUser(response.data.user);
-        } catch (error) {
-          console.error('Error fetching user:', error);
+      
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        const response = await apiUtils.getCurrentUser();
+        
+        if (response.ok) {
+          const userData = await response.json();
+          setUser(userData);
+          setIsAuthenticated(true);
+        } else {
           localStorage.removeItem('token');
         }
+      } catch (error) {
+        console.error('Auth check error:', error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
-
-    fetchUser();
-  }, []); // Empty dependency array is intentional - only run on mount
-
+    
+    checkAuthStatus();
+  }, []);
+  
   const login = async (email, password) => {
+    setLoading(true);
+    setAuthError(null);
+    
     try {
-      console.log('🔐 Login attempt:', { 
-        email, 
-        apiUrl: `${API_BASE_URL}/api/auth/login`,
-        baseUrl: API_BASE_URL 
-      });
+      const response = await apiUtils.login(email, password);
+      const data = await response.json();
       
-      const response = await axios.post(`${API_BASE_URL}/api/auth/login`, {
-        email,
-        password
-      });
-      
-      console.log('✅ Login successful:', response.data);
-      localStorage.setItem('token', response.data.token);
-      setUser(response.data.user);
-      setIsAuthenticated(true);
-      return { success: true };
+      if (response.ok) {
+        localStorage.setItem('token', data.token);
+        setUser(data.user);
+        setIsAuthenticated(true);
+        toast.success('Login successful!');
+        return true;
+      } else {
+        setAuthError(data.message || 'Login failed');
+        toast.error(data.message || 'Login failed');
+        return false;
+      }
     } catch (error) {
-      console.error('❌ Login error:', error);
-      console.error('Error response:', error.response?.data);
-      console.error('Error status:', error.response?.status);
-      return { 
-        success: false, 
-        message: error.response?.data?.message || 'Login failed' 
-      };
+      console.error('Login error:', error);
+      setAuthError('Network error occurred');
+      toast.error('Network error occurred');
+      return false;
+    } finally {
+      setLoading(false);
     }
   };
-
+  
   const register = async (name, email, password) => {
+    setLoading(true);
+    setAuthError(null);
+    
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/auth/register`, {
-        name,
-        email,
-        password
-      });
+      const response = await apiUtils.register(name, email, password);
+      const data = await response.json();
       
-      localStorage.setItem('token', response.data.token);
-      setUser(response.data.user);
-      setIsAuthenticated(true);
-      return { success: true };
+      if (response.ok) {
+        localStorage.setItem('token', data.token);
+        setUser(data.user);
+        setIsAuthenticated(true);
+        toast.success('Registration successful!');
+        return true;
+      } else {
+        setAuthError(data.message || 'Registration failed');
+        toast.error(data.message || 'Registration failed');
+        return false;
+      }
     } catch (error) {
-      return { 
-        success: false, 
-        message: error.response?.data?.message || 'Registration failed' 
-      };
+      console.error('Registration error:', error);
+      setAuthError('Network error occurred');
+      toast.error('Network error occurred');
+      return false;
+    } finally {
+      setLoading(false);
     }
   };
-
+  
   const logout = () => {
     localStorage.removeItem('token');
     setUser(null);
     setIsAuthenticated(false);
-    delete axios.defaults.headers.common['Authorization'];
+    toast.success('Logged out successfully');
   };
 
   const value = {
     user,
+    isAuthenticated,
+    loading,
+    authError,
     login,
     register,
     logout,
-    loading,
-    isAuthenticated
+    setUser
   };
 
   return (

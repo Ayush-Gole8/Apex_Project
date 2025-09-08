@@ -1,0 +1,40 @@
+COCOMO Cost Estimation Report
+=
+
+Inputs
+- Estimated LOC: 31,810
+- Project mode: organic
+  Reason: Auto-selected 'organic' because KLOC=31.81 ≤ 50 (small team, familiar domain).
+- Cost per person-month: ₹120,000.0
+- KLOC: 31.81
+
+Model (Basic COCOMO)
+- Effort (PM) = 2.4 * (KLOC^1.05)
+- Schedule (months) = 2.5 * (Effort^0.38)
+
+Estimates
+- Effort: 90.76 person-months
+- Schedule: 13.87 months
+- Avg team size: 6.55 persons
+- Productivity: 350.48 LOC/PM
+- Estimated cost: ₹10,891,415.85
+
+Project Scan Summary
+- Paths scanned: e:\Apex\frontend, e:\Apex\backend
+- Files analyzed: 35
+- Estimated LOC from scan: 31,810
+  · package-lock.json: 25,016 LOC
+  · data: 3,049 LOC
+  · src: 2,422 LOC
+- Top languages: .json=28,166, .js=3,435, .css=189
+- Largest files:
+  · package-lock.json: 23,538 LOC
+  · package-lock.json: 1,478 LOC
+  · user_courses.json: 1,344 LOC
+  · courses.json: 1,227 LOC
+  · server.js: 938 LOC
+
+Notes
+- Basic COCOMO assumes nominal conditions without cost drivers.
+- Choose mode based on size/complexity: organic, semidetached, embedded.
+- Values are indicative; adjust 'cost per PM' to your team's local rates in INR.

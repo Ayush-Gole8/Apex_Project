@@ -1,97 +1,74 @@
 const fs = require('fs');
 const path = require('path');
 
-// Data storage paths
-const DATA_DIR = path.join(__dirname, 'data');
-const USERS_FILE = path.join(DATA_DIR, 'users.json');
-const COURSES_FILE = path.join(DATA_DIR, 'courses.json');
-const USER_COURSES_FILE = path.join(DATA_DIR, 'user_courses.json');
+// Define data directory and file paths
+const dataDir = path.join(__dirname, 'data');
+const usersFile = path.join(dataDir, 'users.json');
+const coursesFile = path.join(dataDir, 'courses.json');
+const userCoursesFile = path.join(dataDir, 'userCourses.json');
 
 // Ensure data directory exists
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+  console.log(`Created data directory: ${dataDir}`);
 }
 
-// Initialize data files if they don't exist
-function initializeDataFiles() {
-  if (!fs.existsSync(USERS_FILE)) {
-    fs.writeFileSync(USERS_FILE, JSON.stringify([], null, 2));
+// Helper function to ensure a file exists with default data
+const ensureFileExists = (filePath, defaultData = []) => {
+  if (!fs.existsSync(filePath)) {
+    fs.writeFileSync(filePath, JSON.stringify(defaultData, null, 2));
+    console.log(`Created file: ${filePath}`);
+    return true;
   }
-  if (!fs.existsSync(COURSES_FILE)) {
-    fs.writeFileSync(COURSES_FILE, JSON.stringify([], null, 2));
-  }
-  if (!fs.existsSync(USER_COURSES_FILE)) {
-    fs.writeFileSync(USER_COURSES_FILE, JSON.stringify([], null, 2));
-  }
-}
+  return false;
+};
 
-// Data management functions
-const dataManager = {
-  // Users
-  getUsers: () => {
-    try {
-      const data = fs.readFileSync(USERS_FILE, 'utf8');
-      return JSON.parse(data);
-    } catch (error) {
-      console.error('Error reading users file:', error);
-      return [];
-    }
-  },
+// Ensure all data files exist
+ensureFileExists(usersFile);
+ensureFileExists(coursesFile);
+ensureFileExists(userCoursesFile);
 
-  saveUsers: (users) => {
-    try {
-      fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
-      return true;
-    } catch (error) {
-      console.error('Error saving users file:', error);
-      return false;
-    }
-  },
-
-  // Courses
-  getCourses: () => {
-    try {
-      const data = fs.readFileSync(COURSES_FILE, 'utf8');
-      return JSON.parse(data);
-    } catch (error) {
-      console.error('Error reading courses file:', error);
-      return [];
-    }
-  },
-
-  saveCourses: (courses) => {
-    try {
-      fs.writeFileSync(COURSES_FILE, JSON.stringify(courses, null, 2));
-      return true;
-    } catch (error) {
-      console.error('Error saving courses file:', error);
-      return false;
-    }
-  },
-
-  // User Courses
-  getUserCourses: () => {
-    try {
-      const data = fs.readFileSync(USER_COURSES_FILE, 'utf8');
-      return JSON.parse(data);
-    } catch (error) {
-      console.error('Error reading user courses file:', error);
-      return [];
-    }
-  },
-
-  saveUserCourses: (userCourses) => {
-    try {
-      fs.writeFileSync(USER_COURSES_FILE, JSON.stringify(userCourses, null, 2));
-      return true;
-    } catch (error) {
-      console.error('Error saving user courses file:', error);
-      return false;
-    }
+// Load data from file
+const loadData = (filePath, defaultValue = []) => {
+  try {
+    ensureFileExists(filePath, defaultValue);
+    const data = fs.readFileSync(filePath, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error(`Error loading data from ${filePath}:`, error.message);
+    return defaultValue;
   }
 };
 
-// Initialize data files on startup
-initializeDataFiles();
+// Save data to file
+const saveData = (filePath, data) => {
+  try {
+    ensureFileExists(filePath, []);
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+    return true;
+  } catch (error) {
+    console.error(`Error saving data to ${filePath}:`, error.message);
+    return false;
+  }
+};
 
-module.exports = dataManager;
+// User data management
+const getUsers = () => loadData(usersFile);
+const saveUsers = (users) => saveData(usersFile, users);
+
+// Course data management
+const getCourses = () => loadData(coursesFile);
+const saveCourses = (courses) => saveData(coursesFile, courses);
+
+// User course data management
+const getUserCourses = () => loadData(userCoursesFile);
+const saveUserCourses = (userCourses) => saveData(userCoursesFile, userCourses);
+
+module.exports = {
+  getUsers,
+  saveUsers,
+  getCourses,
+  saveCourses,
+  getUserCourses,
+  saveUserCourses
+};
