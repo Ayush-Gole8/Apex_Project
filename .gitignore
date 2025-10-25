@@ -43,8 +43,9 @@ pids
 # Coverage directory used by tools like istanbul
 coverage/
 
-# Database files
-/backend/data/*.json
+# Database files (keep the structure, ignore user data)
+# Uncomment below to ignore all data files in production
+# /backend/data/*.json
 
 # Temporary files
 tmp/

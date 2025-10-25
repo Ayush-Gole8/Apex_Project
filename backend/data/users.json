@@ -1,0 +1,22 @@
+[
+  {
+    "id": "1761372561165",
+    "name": "Admin User",
+    "email": "admin@apex.com",
+    "password": "$2a$10$4XtVatjEbEr2aAxcmHDdvu6ml50iio8IU1JENh58knTYsfN7VfXha",
+    "createdAt": "2025-10-25T06:09:21.165Z",
+    "coursesCompleted": 0,
+    "totalStudyTime": 0,
+    "favoriteTopics": []
+  },
+  {
+    "id": "1761372865120",
+    "name": "Ayush Gole",
+    "email": "ayushgole1910@gmail.com",
+    "password": "$2a$10$7.u9GQDdy.IBupnsKZEj2OkcROPHvmRbVsPeSJWgSajjbKe4hRyxG",
+    "createdAt": "2025-10-25T06:14:25.120Z",
+    "coursesCompleted": 1,
+    "totalStudyTime": 25,
+    "favoriteTopics": []
+  }
+]

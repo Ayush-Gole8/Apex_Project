@@ -1,0 +1,224 @@
+[
+  {
+    "id": "quiz_1761397880444_fz7x4ex2z",
+    "userId": "1761372865120",
+    "courseId": "course_1761397693432_l7gil5fwb",
+    "courseTopic": "Apache Kafka in Distributed Systems: An Engineering Deep Dive",
+    "score": 40,
+    "correctAnswers": 4,
+    "totalQuestions": 10,
+    "passed": false,
+    "timeTaken": 25,
+    "timeLimit": 21,
+    "weakAreas": [
+      "Module 1: Topic, Partition Architecture",
+      "Module 1: Producer Fundamentals",
+      "Module 2: Message Delivery Semantics",
+      "Module 3: Kafka Streams for Real-Time Processing",
+      "Module 2: Acknowledgement Mechanisms (acks) and Replication",
+      "Module 3: Event Sourcing and Microservices Communication with Kafka"
+    ],
+    "detailedResults": [
+      {
+        "questionId": 1,
+        "question": "In Apache Kafka, what is the primary purpose of subdividing a topic into multiple partitions?",
+        "userAnswer": "A",
+        "correctAnswer": "B",
+        "isCorrect": false,
+        "explanation": "Partitions allow a topic's data to be distributed across multiple brokers and processed in parallel by consumers, significantly enhancing scalability and throughput for data streams.",
+        "topic": "Module 1: Topic, Partition Architecture"
+      },
+      {
+        "questionId": 2,
+        "question": "What mechanism do Kafka consumers use to track their progress within a partition and ensure they can resume reading from where they left off after a restart or failure?",
+        "userAnswer": "C",
+        "correctAnswer": "C",
+        "isCorrect": true,
+        "explanation": "Consumers track their position within each partition using offsets. This allows them to reliably resume consumption from the last committed offset, even after interruptions, ensuring reliable consumption.",
+        "topic": "Module 1: Consumer Fundamentals"
+      },
+      {
+        "questionId": 3,
+        "question": "If a Kafka producer is configured with `acks=0`, what does this imply about its message delivery guarantee and latency?",
+        "userAnswer": "C",
+        "correctAnswer": "C",
+        "isCorrect": true,
+        "explanation": "`acks=0` means the producer sends the record and does not wait for any acknowledgment from the broker. This provides the lowest latency and highest throughput but offers no guarantee of message delivery, making it an 'at-most-once' delivery scenario where messages might be lost.",
+        "topic": "Module 2: Acknowledgement Mechanisms (acks)"
+      },
+      {
+        "questionId": 4,
+        "question": "A Kafka producer is sending messages about user activities to a topic with several partitions. If the producer consistently uses the `userID` as the message key, what is the most likely outcome regarding message ordering for a specific user?",
+        "userAnswer": "A",
+        "correctAnswer": "C",
+        "isCorrect": false,
+        "explanation": "When a producer uses a key, Kafka's default partitioning strategy ensures that all records with the same key are sent to the same partition. Within a single partition, Kafka guarantees message order, thus ensuring ordered processing for related data (like a specific user's events).",
+        "topic": "Module 1: Producer Fundamentals"
+      },
+      {
+        "questionId": 5,
+        "question": "A Kafka topic has 7 partitions. Initially, a consumer group has 4 active consumers. If two more consumers are added to this group, what immediate action will Kafka typically perform regarding partition assignments?",
+        "userAnswer": "C",
+        "correctAnswer": "C",
+        "isCorrect": true,
+        "explanation": "Consumer groups enable scalable and fault-tolerant consumption. When consumers are added to or removed from a group, Kafka automatically initiates a rebalancing process to redistribute the topic's partitions among the active consumers, ensuring all partitions are consumed and maximizing parallelism up to the number of partitions.",
+        "topic": "Module 2: Consumer Groups and Parallelism"
+      },
+      {
+        "questionId": 6,
+        "question": "Which Kafka message delivery semantic ensures that messages are never lost but may be processed multiple times, requiring consumers to implement idempotency?",
+        "userAnswer": "A",
+        "correctAnswer": "B",
+        "isCorrect": false,
+        "explanation": "At-least-once delivery guarantees that a message will be delivered at least one time, meaning it will not be lost. However, due to retries or failures, a message might be delivered and processed multiple times. Applications requiring this semantic often need to implement idempotent processing to handle potential duplicates safely.",
+        "topic": "Module 2: Message Delivery Semantics"
+      },
+      {
+        "questionId": 7,
+        "question": "A company needs to continuously ingest data from an existing PostgreSQL database into Kafka, and then send processed data from Kafka to an Elasticsearch cluster for real-time analytics. They want to achieve this with minimal custom code. Which Kafka component is best suited for this task?",
+        "userAnswer": "C",
+        "correctAnswer": "C",
+        "isCorrect": true,
+        "explanation": "Kafka Connect provides a framework for integrating Kafka with external data systems without writing custom code. It uses source connectors (e.g., JDBC connector for PostgreSQL) to import data into Kafka and sink connectors (e.g., Elasticsearch connector) to export data from Kafka, making it ideal for this data integration scenario.",
+        "topic": "Module 3: Kafka Connect for Data Integration"
+      },
+      {
+        "questionId": 8,
+        "question": "An online gaming platform wants to analyze real-time player activity by processing a stream of game events from Kafka. They need to count active players per game session and detect fraudulent patterns by joining event streams. Which Kafka component is designed for building such low-latency, real-time processing applications?",
+        "userAnswer": "A",
+        "correctAnswer": "B",
+        "isCorrect": false,
+        "explanation": "Kafka Streams is a client library specifically for building real-time stream processing applications directly on Kafka. It enables complex data transformations, aggregations (like counting players), and joins across different topics with low latency, making it perfectly suited for real-time analytics on event streams.",
+        "topic": "Module 3: Kafka Streams for Real-Time Processing"
+      },
+      {
+        "questionId": 9,
+        "question": "For a critical application, a Kafka producer must ensure that a message is considered committed only after it has been successfully written to the leader's log and acknowledged by *all* in-sync replicas (ISRs). This guarantees maximum data durability even if the leader broker fails immediately after receiving the message. Which producer `acks` setting achieves this requirement?",
+        "userAnswer": "D",
+        "correctAnswer": "C",
+        "isCorrect": false,
+        "explanation": "`acks=all` (or `acks=-1`) is the strongest acknowledgment setting. It instructs the producer to wait for the full set of in-sync replicas (ISR) to acknowledge the write. This means the record is durable and available even if the leader fails, as long as at least one in-sync replica is available to become the new leader, providing the highest durability guarantee against data loss due to broker failure.",
+        "topic": "Module 2: Acknowledgement Mechanisms (acks) and Replication"
+      },
+      {
+        "questionId": 10,
+        "question": "A microservices architecture leverages Kafka for asynchronous communication and implements event sourcing for its 'Order Service'. When a customer's order status changes (e.g., from 'Pending' to 'Shipped'), how would this event be typically handled in this setup, allowing other services (e.g., 'Inventory Service', 'Notification Service') to react without tight coupling?",
+        "userAnswer": "A",
+        "correctAnswer": "C",
+        "isCorrect": false,
+        "explanation": "In an event-driven, event-sourced microservices architecture, the 'Order Service' would publish an 'OrderStatusChanged' event to a Kafka topic when its state changes. Other interested microservices ('Inventory Service', 'Notification Service') would then consume this event from Kafka and react accordingly (e.g., decrease stock, send shipping confirmation), promoting loose coupling, asynchronous communication, and providing an immutable log of all state changes for event sourcing.",
+        "topic": "Module 3: Event Sourcing and Microservices Communication with Kafka"
+      }
+    ],
+    "submittedAt": "2025-10-25T13:11:20.444Z"
+  },
+  {
+    "id": "quiz_1761399145820_nwo7y60p3",
+    "userId": "1761372865120",
+    "courseId": "course_1761398598545_rme2eltal",
+    "courseTopic": "Mastering Hot Module Reload in React JS: Accelerating Development Workflows",
+    "score": 50,
+    "correctAnswers": 5,
+    "totalQuestions": 10,
+    "passed": false,
+    "timeTaken": 84,
+    "timeLimit": 19,
+    "weakAreas": [
+      "Benefits of HMR for Development Workflow",
+      "How HMR Works in React JS"
+    ],
+    "detailedResults": [
+      {
+        "questionId": 1,
+        "question": "What is the primary characteristic that defines Hot Module Reload (HMR) in React JS development?",
+        "userAnswer": "B",
+        "correctAnswer": "B",
+        "isCorrect": true,
+        "explanation": "HMR's core function, as stated in the course content, is to update modules on the fly without requiring a full page refresh, which differentiates it from traditional live reload.",
+        "topic": "What is Hot Module Reload (HMR)"
+      },
+      {
+        "questionId": 2,
+        "question": "What is the main advantage of using Hot Module Reload (HMR) over traditional live reload in React JS development?",
+        "userAnswer": "A",
+        "correctAnswer": "B",
+        "isCorrect": false,
+        "explanation": "The course explicitly highlights that the 'main advantage of HMR over live reload is state preservation,' which significantly speeds up UI development and debugging.",
+        "topic": "Benefits of HMR for Development Workflow"
+      },
+      {
+        "questionId": 3,
+        "question": "When using Hot Module Reload (HMR) in a React JS project, what common development step is significantly reduced or avoided after making a code change?",
+        "userAnswer": "B",
+        "correctAnswer": "B",
+        "isCorrect": true,
+        "explanation": "HMR's design purpose is to update the application without the need for a full browser page refresh, thereby avoiding the manual or automatic refresh cycle.",
+        "topic": "Benefits of HMR for Development Workflow"
+      },
+      {
+        "questionId": 4,
+        "question": "Which primary component is responsible for detecting file changes and sending updates to the browser when Hot Module Reload (HMR) is active in a React JS project?",
+        "userAnswer": "C",
+        "correctAnswer": "B",
+        "isCorrect": false,
+        "explanation": "The course content states that HMR 'primarily functions through Webpack's Dev Server, which detects file changes, rebuilds modules, and sends updates via WebSockets.'",
+        "topic": "How HMR Works in React JS"
+      },
+      {
+        "questionId": 5,
+        "question": "What is the role of the client-side HMR runtime in the browser during a Hot Module Reload update?",
+        "userAnswer": "B",
+        "correctAnswer": "B",
+        "isCorrect": true,
+        "explanation": "The client-side HMR runtime 'intelligently replaces old modules with new ones, allowing React components to re-render with updated code while preserving their existing state,' as described in the course.",
+        "topic": "How HMR Works in React JS"
+      },
+      {
+        "questionId": 6,
+        "question": "A React developer is working on a complex form with several pre-filled fields. They change the `className` of an input field in a component. How would HMR typically handle this change?",
+        "userAnswer": "B",
+        "correctAnswer": "B",
+        "isCorrect": true,
+        "explanation": "HMR's core benefit is state preservation. A UI change like modifying a `className` would be applied without a full page refresh, meaning the form's current state (entered text) would remain intact.",
+        "topic": "Practical Implementation and Common Configurations"
+      },
+      {
+        "questionId": 7,
+        "question": "You are debugging an issue within a multi-step user onboarding flow in your React application. To reproduce the bug, you typically need to click through 5-6 steps. If you use HMR and make a small change to a component on step 3, what is the expected experience?",
+        "userAnswer": "C",
+        "correctAnswer": "C",
+        "isCorrect": true,
+        "explanation": "This scenario directly illustrates HMR's primary benefit: state preservation. The component updates with new code while the application's state (e.g., being on step 3 with its data) is preserved, avoiding repetitive setup.",
+        "topic": "Benefits of HMR for Development Workflow"
+      },
+      {
+        "questionId": 8,
+        "question": "How does Webpack's Dev Server communicate detected code changes and new module updates to the client-side HMR runtime in the browser?",
+        "userAnswer": "A",
+        "correctAnswer": "C",
+        "isCorrect": false,
+        "explanation": "The course content explicitly states that Webpack's Dev Server 'sends updates via WebSockets,' which is the real-time communication channel for HMR.",
+        "topic": "How HMR Works in React JS"
+      },
+      {
+        "questionId": 9,
+        "question": "Consider a scenario where a React component maintains an internal counter state (`count`) that increments every second. If you implement a minor visual change (e.g., button color) in this component while it's actively incrementing, what fundamental difference between HMR and traditional live reload would become most apparent?",
+        "userAnswer": "A",
+        "correctAnswer": "C",
+        "isCorrect": false,
+        "explanation": "This question highlights the core difference: state preservation. HMR updates the component's code without losing its internal state (`count` continues), whereas live reload (a full page refresh) would reset the component entirely, including its state.",
+        "topic": "Benefits of HMR for Development Workflow"
+      },
+      {
+        "questionId": 10,
+        "question": "The course states HMR enables the 'exchange, addition, or removal of modules without a full browser page refresh.' From a technical perspective, what critical challenge does the client-side HMR runtime overcome to achieve this state preservation when a module (e.g., a React component) is exchanged?",
+        "userAnswer": "D",
+        "correctAnswer": "C",
+        "isCorrect": false,
+        "explanation": "The sophisticated part of HMR's client-side runtime is not just replacing the file, but ensuring that *existing, mounted instances* of a React component continue to function with the new code while retaining their specific state and place in the virtual DOM tree, preventing a full re-initialization.",
+        "topic": "How HMR Works in React JS"
+      }
+    ],
+    "submittedAt": "2025-10-25T13:32:25.820Z"
+  }
+]
