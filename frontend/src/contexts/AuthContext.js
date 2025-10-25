@@ -34,9 +34,17 @@ export const AuthProvider = ({ children }) => {
             headers: { Authorization: `Bearer ${token}` }
           });
           setUser(response.data.user);
+          setIsAuthenticated(true);
         } catch (error) {
           console.error('Error fetching user:', error);
-          localStorage.removeItem('token');
+          // Token expired or invalid
+          if (error.response?.status === 401 || error.response?.status === 403) {
+            console.log('Token expired or invalid, logging out...');
+            localStorage.removeItem('token');
+            setUser(null);
+            setIsAuthenticated(false);
+            delete axios.defaults.headers.common['Authorization'];
+          }
         }
       }
       setLoading(false);
@@ -44,6 +52,39 @@ export const AuthProvider = ({ children }) => {
 
     fetchUser();
   }, []); // Empty dependency array is intentional - only run on mount
+
+  // Add axios interceptor to handle 401/403 responses globally
+  useEffect(() => {
+    const interceptor = axios.interceptors.response.use(
+      response => response,
+      error => {
+        // Only handle auth errors if there's an actual response from the server
+        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+          // Token expired or invalid
+          console.log('Token expired or invalid, logging out...');
+          localStorage.removeItem('token');
+          setUser(null);
+          setIsAuthenticated(false);
+          delete axios.defaults.headers.common['Authorization'];
+          
+          // Don't redirect if we're already on home or if it's a network error
+          if (window.location.pathname !== '/') {
+            // Use a small timeout to allow other error handlers to run first
+            setTimeout(() => {
+              if (window.location.pathname !== '/') {
+                window.location.href = '/';
+              }
+            }, 100);
+          }
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    return () => {
+      axios.interceptors.response.eject(interceptor);
+    };
+  }, []);
 
   const login = async (email, password) => {
     try {

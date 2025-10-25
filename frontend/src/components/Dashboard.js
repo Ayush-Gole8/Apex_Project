@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   FiArrowLeft, FiBook, FiClock, FiTrendingUp, FiAward, 
-  FiCalendar, FiTarget, FiStar, FiPlay, FiBarChart2
+  FiCalendar, FiTarget, FiStar, FiPlay, FiBarChart2, FiCheckCircle, FiXCircle
 } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -13,6 +13,7 @@ import API_BASE_URL from '../config/api';
 
 const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
+  const [quizResults, setQuizResults] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
@@ -47,15 +48,25 @@ const Dashboard = () => {
       const token = localStorage.getItem('token');
       console.log('Fetching dashboard data with token:', token ? 'present' : 'missing');
       
-      const response = await axios.get(`${API_BASE_URL}/api/user/dashboard`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const [dashboardResponse, quizResponse] = await Promise.all([
+        axios.get(`${API_BASE_URL}/api/user/dashboard`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }),
+        axios.get(`${API_BASE_URL}/api/user/quiz-results`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+      ]);
       
-      console.log('Dashboard data received:', response.data);
-      setDashboardData(response.data);
+      console.log('Dashboard data received:', dashboardResponse.data);
+      console.log('Quiz results received:', quizResponse.data);
+      setDashboardData(dashboardResponse.data);
+      setQuizResults(quizResponse.data.results || []);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       console.error('Error response:', error.response?.data);
@@ -63,12 +74,6 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Add refresh function
-  const refreshDashboard = () => {
-    setLoading(true);
-    fetchDashboardData();
   };
 
   if (loading) {
@@ -264,8 +269,102 @@ const Dashboard = () => {
             </motion.div>
           </div>
 
+          {/* Quiz Results Section */}
+          {quizResults.length > 0 && (
+            <motion.div
+              className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-6 mb-8"
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.7 }}
+            >
+              <h3 className="text-xl font-bold text-white mb-6 flex items-center">
+                <FiTarget className="mr-2" />
+                Quiz Performance
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {quizResults.slice(0, 6).map((result, index) => (
+                  <motion.div
+                    key={result.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 * index }}
+                    className={`p-4 rounded-xl border-2 ${
+                      result.passed 
+                        ? 'bg-emerald-500/10 border-emerald-500/30' 
+                        : 'bg-red-500/10 border-red-500/30'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h4 className="text-white font-medium text-sm truncate mb-1">
+                          {result.courseTopic}
+                        </h4>
+                        <p className="text-white/60 text-xs">
+                          {new Date(result.submittedAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      {result.passed ? (
+                        <FiCheckCircle className="text-emerald-400 flex-shrink-0 ml-2" size={20} />
+                      ) : (
+                        <FiXCircle className="text-red-400 flex-shrink-0 ml-2" size={20} />
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-white/70 text-xs">Score</span>
+                      <span className={`text-lg font-bold ${
+                        result.passed ? 'text-emerald-400' : 'text-red-400'
+                      }`}>
+                        {result.score}%
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between text-xs text-white/60 mb-3">
+                      <span>{result.correctAnswers}/{result.totalQuestions} correct</span>
+                      <span>{Math.floor(result.timeTaken / 60)}:{(result.timeTaken % 60).toString().padStart(2, '0')}</span>
+                    </div>
+                    
+                    {result.weakAreas && result.weakAreas.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-white/10">
+                        <p className="text-xs text-white/60 mb-2">Weak Areas:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {result.weakAreas.slice(0, 2).map((area, idx) => (
+                            <span 
+                              key={idx}
+                              className="px-2 py-0.5 bg-red-500/20 text-red-300 text-xs rounded-full truncate"
+                              title={area}
+                            >
+                              {area.length > 15 ? area.substring(0, 15) + '...' : area}
+                            </span>
+                          ))}
+                          {result.weakAreas.length > 2 && (
+                            <span className="px-2 py-0.5 bg-white/10 text-white/60 text-xs rounded-full">
+                              +{result.weakAreas.length - 2}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+              
+              {quizResults.length > 6 && (
+                <div className="text-center mt-6">
+                  <button
+                    onClick={() => navigate('/my-courses')}
+                    className="text-emerald-400 hover:text-emerald-300 text-sm underline"
+                  >
+                    View all quiz results
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          )}
+
           {/* Recent Activity & Favorite Topics */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             {/* Recent Activity */}
             <motion.div
               className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-6"

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   FiArrowLeft, FiBook, FiClock, FiCalendar, FiPlay, 
-  FiCheckCircle, FiSearch, FiFilter 
+  FiCheckCircle, FiSearch, FiFilter, FiAward 
 } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -13,6 +13,7 @@ import API_BASE_URL from '../config/api';
 
 const PreviousCourses = () => {
   const [courses, setCourses] = useState([]);
+  const [quizResults, setQuizResults] = useState({});
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -30,17 +31,35 @@ const PreviousCourses = () => {
   const fetchUserCourses = async () => {
     try {
       const token = localStorage.getItem('token');
-      console.log('Fetching user courses...');
+      console.log('Fetching user courses and quiz results...');
       
-      const response = await axios.get(`${API_BASE_URL}/api/user/courses`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      const [coursesResponse, quizResponse] = await Promise.all([
+        axios.get(`${API_BASE_URL}/api/user/courses`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }),
+        axios.get(`${API_BASE_URL}/api/user/quiz-results`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }).catch(() => ({ data: { results: [] } })) // Fallback if quiz results fail
+      ]);
+      
+      console.log('User courses received:', coursesResponse.data);
+      console.log('Quiz results received:', quizResponse.data);
+      setCourses(coursesResponse.data.courses);
+      
+      // Create a map of courseId to latest quiz result
+      const quizMap = {};
+      (quizResponse.data.results || []).forEach(result => {
+        if (!quizMap[result.courseId] || new Date(result.submittedAt) > new Date(quizMap[result.courseId].submittedAt)) {
+          quizMap[result.courseId] = result;
         }
       });
-      
-      console.log('User courses received:', response.data);
-      setCourses(response.data.courses);
+      setQuizResults(quizMap);
     } catch (error) {
       console.error('Error fetching courses:', error);
       toast.error('Failed to load courses');
@@ -205,15 +224,29 @@ const PreviousCourses = () => {
                 >
                   {/* Status Badge */}
                   <div className="flex items-center justify-between mb-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      course.completed 
-                        ? 'bg-forest-500/20 text-forest-300'
-                        : course.progress > 0 
-                        ? 'bg-emerald-custom-500/20 text-emerald-custom-300'
-                        : 'bg-gray-500/20 text-gray-300'
-                    }`}>
-                      {course.completed ? 'Completed' : course.progress > 0 ? 'In Progress' : 'Not Started'}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        course.completed 
+                          ? 'bg-forest-500/20 text-forest-300'
+                          : course.progress > 0 
+                          ? 'bg-emerald-custom-500/20 text-emerald-custom-300'
+                          : 'bg-gray-500/20 text-gray-300'
+                      }`}>
+                        {course.completed ? 'Completed' : course.progress > 0 ? 'In Progress' : 'Not Started'}
+                      </span>
+                      
+                      {/* Quiz Badge */}
+                      {quizResults[course.id] && (
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${
+                          quizResults[course.id].passed 
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                            : 'bg-red-500/20 text-red-300 border border-red-500/30'
+                        }`}>
+                          <FiAward size={12} />
+                          Quiz: {quizResults[course.id].score}%
+                        </span>
+                      )}
+                    </div>
                     
                     {course.course.isAIGenerated && (
                       <span className="text-emerald-custom-500 text-xs">AI Generated</span>

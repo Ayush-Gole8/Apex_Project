@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiArrowLeft, FiClock, FiBookOpen, FiExternalLink, FiPlay, FiDownload, FiCheck } from 'react-icons/fi';
+import { FiArrowLeft, FiClock, FiBookOpen, FiExternalLink, FiPlay, FiDownload, FiCheck, FiAlertCircle } from 'react-icons/fi';
 import Footer from './Footer';
 import axios from 'axios';
 import API_BASE_URL from '../config/api';
 import toast from 'react-hot-toast';
+import { formatText, isValidUrl, getDomainFromUrl } from '../utils/textFormatting';
 
 const GeneratedCourse = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { courseData, topic } = location.state || {};
   const [expandedModule, setExpandedModule] = useState(0);
-  const [completedModules, setCompletedModules] = useState(new Set());
+  const [completedModules, setCompletedModules] = useState([]);
 
   if (!courseData) {
     return (
@@ -89,7 +90,7 @@ const GeneratedCourse = () => {
   };
 
   const progressPercentage = courseData.modules ? 
-    (completedModules.size / courseData.modules.length) * 100 : 0;
+    (completedModules.length / courseData.modules.length) * 100 : 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-dark-forest-800 via-dark-forest-700 to-dark-forest-800">
@@ -267,17 +268,17 @@ const GeneratedCourse = () => {
                     whileInView={{ y: 0, opacity: 1 }}
                     transition={{ delay: index * 0.1 }}
                   >
-                    <button
+                    <div
                       onClick={() => setExpandedModule(expandedModule === index ? null : index)}
-                      className="w-full p-6 text-left flex items-center justify-between hover:bg-white/5 transition-colors"
+                      className="w-full p-6 text-left flex items-center justify-between hover:bg-white/5 transition-colors cursor-pointer"
                     >
                       <div className="flex items-center space-x-4">
                         <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold ${
-                          completedModules.has(index) 
+                          completedModules.includes(index) 
                             ? 'bg-green-500' 
                             : 'bg-gradient-to-r from-emerald-custom-500 to-forest-500'
                         }`}>
-                          {completedModules.has(index) ? <FiCheck /> : index + 1}
+                          {completedModules.includes(index) ? <FiCheck /> : index + 1}
                         </div>
                         <div className="flex-1">
                           <h3 className="text-white font-semibold mb-1">{module.title}</h3>
@@ -293,14 +294,14 @@ const GeneratedCourse = () => {
                           handleModuleComplete(index);
                         }}
                         className={`px-3 py-1 rounded-full text-xs transition-colors ${
-                          completedModules.has(index)
+                          completedModules.includes(index)
                             ? 'bg-green-500 text-white'
                             : 'bg-white/20 text-white/90 hover:bg-white/30'
                         }`}
                       >
-                        {completedModules.has(index) ? 'Completed' : 'Mark Complete'}
+                        {completedModules.includes(index) ? 'Completed' : 'Mark Complete'}
                       </button>
-                    </button>
+                    </div>
                     
                     {expandedModule === index && (
                       <motion.div
@@ -313,12 +314,13 @@ const GeneratedCourse = () => {
                           {/* Detailed Content */}
                           {module.detailedContent && (
                             <div className="mb-6">
-                              <h4 className="text-white font-semibold mb-4 text-lg">Detailed Explanation</h4>
+                              <h4 className="text-white font-semibold mb-4 text-lg flex items-center space-x-2">
+                                <FiBookOpen className="text-emerald-custom-400" />
+                                <span>Detailed Explanation</span>
+                              </h4>
                               <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6">
-                                <div className="prose prose-invert max-w-none">
-                                  <p className="text-white/90 text-sm leading-relaxed whitespace-pre-wrap mb-0">
-                                    {module.detailedContent}
-                                  </p>
+                                <div className="prose prose-invert max-w-none text-sm">
+                                  {formatText(module.detailedContent)}
                                 </div>
                               </div>
                             </div>
@@ -327,13 +329,20 @@ const GeneratedCourse = () => {
                           {/* Key Points */}
                           {module.keyPoints && module.keyPoints.length > 0 && (
                             <div className="mb-6">
-                              <h4 className="text-white font-semibold mb-4 text-lg">Key Points</h4>
-                              <div className="bg-gradient-to-r from-emerald-custom-500/10 to-forest-500/10 border border-emerald-custom-500/20 rounded-lg p-4">
-                                <ul className="space-y-3 list-none">
+                              <h4 className="text-white font-semibold mb-4 text-lg flex items-center space-x-2">
+                                <FiCheck className="text-emerald-custom-400" />
+                                <span>Key Takeaways</span>
+                              </h4>
+                              <div className="bg-gradient-to-r from-emerald-custom-500/10 to-forest-500/10 border border-emerald-custom-500/20 rounded-lg p-5">
+                                <ul className="space-y-4 list-none">
                                   {module.keyPoints.map((point, pointIndex) => (
                                     <li key={pointIndex} className="flex items-start space-x-3">
-                                      <div className="w-2 h-2 bg-emerald-custom-400 rounded-full mt-2 flex-shrink-0"></div>
-                                      <span className="text-white/90 text-sm leading-relaxed flex-1">{point}</span>
+                                      <div className="w-6 h-6 bg-emerald-custom-500/30 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                                        <span className="text-emerald-custom-300 font-bold text-xs">{pointIndex + 1}</span>
+                                      </div>
+                                      <div className="flex-1 text-white/90 text-sm leading-relaxed">
+                                        {formatText(point)}
+                                      </div>
                                     </li>
                                   ))}
                                 </ul>
@@ -344,12 +353,17 @@ const GeneratedCourse = () => {
                           {/* Topics */}
                           {module.topics && module.topics.length > 0 && (
                             <div className="mb-6">
-                              <h4 className="text-white font-semibold mb-4 text-lg">Topics Covered</h4>
+                              <h4 className="text-white font-semibold mb-4 text-lg flex items-center space-x-2">
+                                <FiPlay className="text-emerald-custom-400" />
+                                <span>Topics Covered in This Section</span>
+                              </h4>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 {module.topics.map((topic, topicIndex) => (
-                                  <div key={topicIndex} className="flex items-center space-x-3 bg-white/5 rounded-lg p-3">
-                                    <FiPlay className="text-emerald-custom-400 flex-shrink-0" size={14} />
-                                    <span className="text-white/90 text-sm">{topic}</span>
+                                  <div key={topicIndex} className="flex items-start space-x-3 bg-white/5 rounded-lg p-4 hover:bg-white/10 transition-all">
+                                    <div className="w-6 h-6 bg-gradient-to-br from-emerald-custom-500 to-forest-600 rounded flex items-center justify-center flex-shrink-0 mt-0.5">
+                                      <FiCheck className="text-white" size={12} />
+                                    </div>
+                                    <span className="text-white/90 text-sm leading-relaxed flex-1">{topic}</span>
                                   </div>
                                 ))}
                               </div>
@@ -359,9 +373,14 @@ const GeneratedCourse = () => {
                           {/* Practice Exercise */}
                           {module.practiceExercise && (
                             <div className="mb-6">
-                              <h4 className="text-white font-semibold mb-4 text-lg">Practice Exercise</h4>
-                              <div className="bg-warm-orange-500/10 border border-warm-orange-500/20 rounded-lg p-4">
-                                <p className="text-warm-orange-200 text-sm leading-relaxed">{module.practiceExercise}</p>
+                              <h4 className="text-white font-semibold mb-4 text-lg flex items-center space-x-2">
+                                <FiPlay className="text-warm-orange-400" />
+                                <span>Hands-On Practice</span>
+                              </h4>
+                              <div className="bg-warm-orange-500/10 border border-warm-orange-500/30 rounded-lg p-5">
+                                <div className="text-warm-orange-200 text-sm leading-relaxed">
+                                  {formatText(module.practiceExercise)}
+                                </div>
                               </div>
                             </div>
                           )}
@@ -369,50 +388,83 @@ const GeneratedCourse = () => {
                           {/* Common Mistakes */}
                           {module.commonMistakes && module.commonMistakes.length > 0 && (
                             <div className="mb-6">
-                              <h4 className="text-white font-semibold mb-4 text-lg">Common Mistakes to Avoid</h4>
+                              <h4 className="text-white font-semibold mb-4 text-lg flex items-center space-x-2">
+                                <FiAlertCircle className="text-red-400" />
+                                <span>Common Pitfalls to Avoid</span>
+                              </h4>
                               <div className="space-y-3">
                                 {module.commonMistakes.map((mistake, mistakeIndex) => (
-                                  <div key={mistakeIndex} className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-                                    <p className="text-red-200 text-sm leading-relaxed">{mistake}</p>
+                                  <div key={mistakeIndex} className="bg-red-500/10 border border-red-500/30 rounded-lg p-5">
+                                    <div className="flex items-start space-x-3">
+                                      <div className="w-6 h-6 bg-red-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                                        <span className="text-red-400 font-bold text-xs">!</span>
+                                      </div>
+                                      <div className="flex-1 text-red-200 text-sm leading-relaxed">
+                                        {formatText(mistake)}
+                                      </div>
+                                    </div>
                                   </div>
                                 ))}
                               </div>
                             </div>
-                          )}                          {/* Resources */}
+                          )}
+
+                          {/* Resources */}
                           {module.resources && module.resources.length > 0 && (
                             <div>
-                              <h4 className="text-white font-semibold mb-4 text-lg">Learning Resources</h4>
+                              <h4 className="text-white font-semibold mb-4 text-lg flex items-center space-x-2">
+                                <FiBookOpen className="text-emerald-custom-400" />
+                                <span>Learning Resources</span>
+                              </h4>
                               <div className="space-y-4">
-                                {module.resources.map((resource, resourceIndex) => (
-                                  <div key={resourceIndex} className="bg-white/5 border border-white/10 rounded-lg p-4 hover:bg-white/10 transition-colors">
-                                    <div className="flex items-start justify-between">
-                                      <div className="flex items-start space-x-4 flex-1">
-                                        <div className="w-10 h-10 bg-gradient-to-r from-emerald-custom-500 to-forest-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                                          {resource.type === 'video' ? <FiPlay size={16} /> : 
-                                           resource.type === 'article' ? <FiBookOpen size={16} /> : 
-                                           <FiDownload size={16} />}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                          <h5 className="text-white font-medium text-sm mb-1">{resource.title}</h5>
-                                          <p className="text-white/70 text-xs capitalize mb-2">{resource.type}</p>
-                                          {resource.description && (
-                                            <p className="text-white/80 text-xs leading-relaxed">{resource.description}</p>
-                                          )}
+                                {module.resources.map((resource, resourceIndex) => {
+                                  const hasValidUrl = isValidUrl(resource.url);
+                                  return (
+                                    <div key={resourceIndex} className="bg-white/5 border border-white/10 rounded-lg p-5 hover:bg-white/10 transition-all">
+                                      <div className="flex items-start justify-between gap-4">
+                                        <div className="flex items-start space-x-4 flex-1">
+                                          <div className="w-12 h-12 bg-gradient-to-br from-emerald-custom-500 to-forest-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                                            {resource.type === 'video' ? <FiPlay className="text-white" size={18} /> : 
+                                             resource.type === 'article' ? <FiBookOpen className="text-white" size={18} /> : 
+                                             resource.type === 'documentation' ? <FiBookOpen className="text-white" size={18} /> :
+                                             <FiDownload className="text-white" size={18} />}
+                                          </div>
+                                          <div className="flex-1 min-w-0">
+                                            <h5 className="text-white font-semibold text-base mb-2">
+                                              {resource.title}
+                                            </h5>
+                                            <div className="flex items-center space-x-3 mb-2">
+                                              <span className="text-xs px-2 py-1 bg-emerald-custom-500/20 text-emerald-custom-300 rounded-full capitalize">
+                                                {resource.type || 'Resource'}
+                                              </span>
+                                              {hasValidUrl && (
+                                                <span className="text-xs text-white/50">
+                                                  {getDomainFromUrl(resource.url)}
+                                                </span>
+                                              )}
+                                            </div>
+                                            {resource.description && (
+                                              <p className="text-white/80 text-sm leading-relaxed mb-3">
+                                                {resource.description}
+                                              </p>
+                                            )}
+                                            {hasValidUrl && (
+                                              <a
+                                                href={resource.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center space-x-2 text-emerald-custom-400 hover:text-emerald-custom-300 transition-colors text-sm font-medium"
+                                              >
+                                                <span>Visit Resource</span>
+                                                <FiExternalLink size={14} />
+                                              </a>
+                                            )}
+                                          </div>
                                         </div>
                                       </div>
-                                      {resource.url && resource.url !== "REAL_PUBLIC_URL_ONLY" && (
-                                        <a
-                                          href={resource.url}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="text-emerald-custom-400 hover:text-emerald-custom-300 transition-colors flex-shrink-0 ml-4"
-                                        >
-                                          <FiExternalLink size={18} />
-                                        </a>
-                                      )}
                                     </div>
-                                  </div>
-                                ))}
+                                  );
+                                })}
                               </div>
                             </div>
                           )}
@@ -479,13 +531,51 @@ const GeneratedCourse = () => {
             </motion.div>
           )}
 
+          {/* Take Quiz Button */}
+          <motion.div
+            className="mt-12 text-center"
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.7 }}
+          >
+            <div className="bg-gradient-to-r from-emerald-500/20 to-blue-500/20 border-2 border-emerald-500/30 rounded-2xl p-8 mb-8">
+              <h3 className="text-2xl font-bold text-white mb-3">Test Your Knowledge!</h3>
+              <p className="text-white/70 mb-6 max-w-2xl mx-auto">
+                Ready to assess your understanding? Take a quiz to evaluate what you've learned 
+                and identify areas for improvement. You'll need 60% to pass.
+              </p>
+              <button
+                onClick={() => navigate(`/quiz/${courseData.id}`, { 
+                  state: { 
+                    course: courseData,
+                    topic: topic 
+                  } 
+                })}
+                className="group relative inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-emerald-500 to-blue-500 text-white text-lg font-semibold rounded-xl hover:shadow-2xl hover:shadow-emerald-500/50 transition-all duration-300 hover:scale-105"
+              >
+                <span>Take Quiz</span>
+                <svg 
+                  className="w-6 h-6 group-hover:translate-x-1 transition-transform" 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+              <p className="text-white/50 text-sm mt-4">
+                📋 10 questions • ⏱️ Time limited • 🎯 Multiple choice
+              </p>
+            </div>
+          </motion.div>
+
           {/* Next Steps */}
           {courseData.nextSteps && courseData.nextSteps.length > 0 && (
             <motion.div
               className="bg-white/15 backdrop-blur-lg border border-white/25 rounded-xl p-6 mt-8"
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.6 }}
+              transition={{ delay: 0.8 }}
             >
               <h3 className="text-xl font-bold text-white mb-4">Next Steps</h3>
               <div className="space-y-4">
