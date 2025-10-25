@@ -65,6 +65,9 @@ const corsOptions = {
   optionsSuccessStatus: 200
 };
 
+// Trust proxy - Required for Render and other reverse proxies
+app.set('trust proxy', 1);
+
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -76,6 +79,7 @@ const limiter = rateLimit({
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  trustProxy: true, // Trust X-Forwarded-For header
 });
 
 const aiGenerationLimiter = rateLimit({
@@ -84,6 +88,7 @@ const aiGenerationLimiter = rateLimit({
   message: 'Too many course generation requests. Please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  trustProxy: true, // Trust X-Forwarded-For header
 });
 
 // Apply rate limiting to all routes
