@@ -168,8 +168,178 @@ const initializeDefaultUser = async () => {
 initializeDefaultUser();
 
 // Helper functions
-const generateUserId = () => Date.now().toString();
-const generateCourseId = () => 'course_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+const generateUserId = () => {
+  return `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+};
+
+const generateCourseId = () => {
+  return `course_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+};
+
+// URL Validation Helper - Check if URL is valid and from trusted sources
+const validateResourceURL = (url) => {
+  if (!url || typeof url !== 'string') return false;
+  
+  // Check for placeholder or fake URLs
+  const invalidPatterns = [
+    'example.com',
+    'placeholder',
+    'your-url',
+    'sample',
+    'test.com',
+    'fake',
+    'dummy',
+    'xxx'
+  ];
+  
+  const urlLower = url.toLowerCase();
+  if (invalidPatterns.some(pattern => urlLower.includes(pattern))) {
+    return false;
+  }
+  
+  // List of trusted educational domains
+  const trustedDomains = [
+    'geeksforgeeks.org',
+    'developer.mozilla.org',
+    'w3schools.com',
+    'stackoverflow.com',
+    'github.com',
+    'youtube.com',
+    'youtu.be',
+    'medium.com',
+    'towardsdatascience.com',
+    'realpython.com',
+    'freecodecamp.org',
+    'docs.python.org',
+    'reactjs.org',
+    'react.dev',
+    'nodejs.org',
+    'javascript.info',
+    'python.org',
+    'java.com',
+    'oracle.com/java',
+    'cplusplus.com',
+    'cppreference.com',
+    'tutorialspoint.com',
+    'javatpoint.com',
+    'programiz.com',
+    'coursera.org',
+    'edx.org',
+    'udemy.com',
+    'udacity.com',
+    'khanacademy.org',
+    'codecademy.com',
+    'leetcode.com',
+    'hackerrank.com',
+    'kaggle.com',
+    'tensorflow.org',
+    'pytorch.org',
+    'scikit-learn.org',
+    'pandas.pydata.org',
+    'numpy.org',
+    'scipy.org',
+    'jupyter.org',
+    'aws.amazon.com',
+    'cloud.google.com',
+    'azure.microsoft.com',
+    'kubernetes.io',
+    'docker.com',
+    'git-scm.com',
+    'gitlab.com',
+    'bitbucket.org',
+    'rust-lang.org',
+    'golang.org',
+    'go.dev',
+    'swift.org',
+    'kotlinlang.org',
+    'ruby-lang.org',
+    'php.net',
+    'laravel.com',
+    'django.org',
+    'flask.palletsprojects.com',
+    'expressjs.com',
+    'nestjs.com',
+    'vuejs.org',
+    'angular.io',
+    'svelte.dev',
+    'nextjs.org',
+    'vercel.com',
+    'netlify.com',
+    'heroku.com',
+    'railway.app',
+    'render.com',
+    'digitalocean.com',
+    'linode.com',
+    'ieee.org',
+    'acm.org',
+    'arxiv.org',
+    'researchgate.net',
+    'scholar.google.com',
+    'mit.edu',
+    'stanford.edu',
+    'berkeley.edu',
+    'harvard.edu',
+    'coursera.org',
+    'edx.org',
+    'ocw.mit.edu',
+    'cs50.harvard.edu'
+  ];
+  
+  // Check if URL starts with http/https
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    return false;
+  }
+  
+  // Check if URL contains at least one trusted domain
+  try {
+    const urlObj = new URL(url);
+    const hostname = urlObj.hostname.toLowerCase();
+    return trustedDomains.some(domain => hostname.includes(domain));
+  } catch (error) {
+    return false;
+  }
+};
+
+// Clean and validate course resources
+const cleanCourseResources = (course) => {
+  if (!course || !course.modules) return course;
+  
+  course.modules.forEach(module => {
+    if (module.resources && Array.isArray(module.resources)) {
+      // Filter out invalid URLs
+      module.resources = module.resources.filter(resource => {
+        if (!resource.url) return false;
+        
+        const isValid = validateResourceURL(resource.url);
+        if (!isValid) {
+          console.log(`⚠️  Filtered out invalid URL: ${resource.url}`);
+        }
+        return isValid;
+      });
+      
+      // If no valid resources remain, add generic learning resources
+      if (module.resources.length === 0) {
+        console.log(`ℹ️  No valid resources for module "${module.title}", adding general resources`);
+        module.resources = [
+          {
+            title: "GeeksforGeeks - Computer Science Tutorials",
+            url: "https://www.geeksforgeeks.org/",
+            type: "article",
+            description: "Comprehensive tutorials and articles on computer science topics"
+          },
+          {
+            title: "MDN Web Docs - Web Development Resources",
+            url: "https://developer.mozilla.org/",
+            type: "documentation",
+            description: "Official documentation and guides for web technologies"
+          }
+        ];
+      }
+    }
+  });
+  
+  return course;
+};
 
 /**
  * Calculate accurate course duration based on content
@@ -711,6 +881,20 @@ CRITICAL REQUIREMENTS:
      * Microsoft Docs (docs.microsoft.com) - for Microsoft technologies
      * Apple Developer (developer.apple.com) - for Apple technologies
      * Android Developer (developer.android.com) - for Android
+     * Harvard CS50 (cs50.harvard.edu) - Computer science fundamentals
+     * UC Berkeley CS Materials (inst.eecs.berkeley.edu) - CS course materials
+     * Princeton COS (cs.princeton.edu) - Computer science resources
+     * Cornell CS (cs.cornell.edu) - Course materials and resources
+     * Stanford Online (online.stanford.edu) - CS and engineering courses
+     * MIT OpenCourseWare (ocw.mit.edu) - University-level CS courses
+     * Kaggle Learn (kaggle.com/learn) - Data science and ML tutorials
+     * Towards Data Science (towardsdatascience.com) - ML and data science articles
+     * Google AI Education (ai.google/education) - AI and ML learning resources
+     * Linux Documentation Project (tldp.org) - Linux guides and HOWTOs
+     * AWS Documentation (docs.aws.amazon.com) - Cloud computing
+     * Kubernetes Documentation (kubernetes.io/docs) - Container orchestration
+     * Git Documentation (git-scm.com/doc) - Version control system
+     * Google Engineering Practices (google.github.io/eng-practices) - Code review and engineering
       - Example good title: "Decision Trees in Machine Learning - GeeksforGeeks Tutorial"
       - Example bad title: "Tutorial" or "Documentation"
 4. COMPREHENSIVE EXPLANATIONS: Each module should have necessary and brief content, where the student can understand the topic quickly
@@ -753,6 +937,31 @@ Create the course in this EXACT JSON format:
           "description": "What makes this resource useful for learning this concept"
         }
       ],
+
+CRITICAL RULES FOR RESOURCE URLS:
+1. URLs MUST be real, working links to actual published content
+2. URLs MUST point to specific articles/tutorials about the exact topic being discussed
+3. NEVER generate fake URLs or placeholder links
+4. Only use URLs from these verified reliable sources:
+   - GeeksforGeeks: https://www.geeksforgeeks.org/[topic-name]/
+   - MDN Web Docs: https://developer.mozilla.org/en-US/docs/...
+   - W3Schools: https://www.w3schools.com/[topic]/
+   - Real Python: https://realpython.com/[topic]/
+   - FreeCodeCamp: https://www.freecodecamp.org/news/[topic]/
+   - Medium/Towards Data Science: https://towardsdatascience.com/[topic]
+   - YouTube tutorials: https://www.youtube.com/watch?v=[video-id]
+   - Official documentation sites (Python.org, React.dev, etc.)
+   - Stack Overflow: https://stackoverflow.com/questions/[specific-topic]
+   - GitHub repositories: https://github.com/[org]/[repo]
+5. If you don't know a working URL for a specific topic, use these general learning resources:
+   - For programming: https://www.geeksforgeeks.org/ (general programming articles)
+   - For web dev: https://developer.mozilla.org/ (MDN docs homepage)
+   - For tutorials: https://www.w3schools.com/ (W3Schools homepage)
+   - For videos: https://www.youtube.com/results?search_query=[topic+name+tutorial]
+6. Each module should have 2-3 real, verified resource links only
+7. Better to provide 2 real links than 4 fake ones
+
+
       "practiceExercise": "Detailed hands-on exercise with specific step-by-step instructions that takes 5-8 minutes to complete. Include what the student should do, what they should observe, and what they should learn from the exercise. Write in plain text without markdown.",
       "commonMistakes": [
         "Small explanation of common mistake 1 and comprehensive guidance on how to avoid it. Use bold and italic text whenever needed.",
@@ -895,28 +1104,31 @@ IMPORTANT REMINDERS:
       console.log('📊 Calculated course duration:', durationInfo.duration);
       console.log('📖 Estimated read time:', durationInfo.estimatedReadTime);
       
+      // Clean and validate resource URLs
+      const cleanedCourse = cleanCourseResources(parsedCourse);
+      
       // Add metadata and save course
-      parsedCourse.generatedAt = new Date().toISOString();
-      parsedCourse.isAIGenerated = true;
-      parsedCourse.ragContext = relevantContext.length > 0 ? 
+      cleanedCourse.generatedAt = new Date().toISOString();
+      cleanedCourse.isAIGenerated = true;
+      cleanedCourse.ragContext = relevantContext.length > 0 ? 
         relevantContext.map(c => c.domain || c.concept) : ['general engineering'];
       
       // Generate unique course ID and save
       const courseId = generateCourseId();
-      parsedCourse.id = courseId;
+      cleanedCourse.id = courseId;
       
       // Save course to user's history
       const userCourse = {
         id: courseId,
         userId: req.user.userId,
         topic: topic,
-        course: parsedCourse,
+        course: cleanedCourse,
         createdAt: new Date().toISOString(),
         completed: false,
         progress: 0
       };
       
-      courses.push(parsedCourse);
+      courses.push(cleanedCourse);
       userCourses.push(userCourse);
       
       // Save to persistent storage
@@ -924,7 +1136,7 @@ IMPORTANT REMINDERS:
       dataManager.saveUserCourses(userCourses);
       
       console.log('✅ Course generated and saved for user:', req.user.email);
-      res.json(parsedCourse);
+      res.json(cleanedCourse);
     } catch (parseError) {
       console.error('❌ JSON parsing failed:', parseError.message);
       console.log('Raw AI response:', courseData.substring(0, 500) + '...');
